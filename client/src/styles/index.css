@@ -1,0 +1,70 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: "Inter", sans-serif;
+  color: #1f1f1f;
+  background: #f6f8fc;
+}
+
+html {
+  background: #f6f8fc;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: #1f1f1f;
+  background:
+    radial-gradient(circle at top left, rgba(166, 189, 248, 0.28), transparent 22%),
+    radial-gradient(circle at top right, rgba(214, 228, 255, 0.55), transparent 24%),
+    linear-gradient(180deg, #f8faff 0%, #f5f7fb 42%, #eef3fb 100%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(170, 180, 198, 0.9);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.prose-preview {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.drive-grid {
+  background-image:
+    linear-gradient(to right, rgba(210, 219, 236, 0.18) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(210, 219, 236, 0.18) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.doc-page-shadow {
+  box-shadow:
+    0 1px 2px rgba(16, 24, 40, 0.04),
+    0 16px 40px rgba(17, 24, 39, 0.08);
+}
