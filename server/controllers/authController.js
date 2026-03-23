@@ -3,6 +3,7 @@ import { User } from "../models/User.js";
 import { Notification } from "../models/Notification.js";
 import { asyncHandler, AppError } from "../utils/errors.js";
 import { signToken } from "../utils/jwt.js";
+import { buildAvatarSeed, generateAvatarColor } from "../utils/avatarColor.js";
 
 const sanitizeUser = (user) => ({
   id: user._id,
@@ -13,6 +14,15 @@ const sanitizeUser = (user) => ({
   preferences: user.preferences,
   createdAt: user.createdAt
 });
+
+const syncAvatarColor = async (user) => {
+  const nextColor = generateAvatarColor(buildAvatarSeed(user));
+  if (user.avatarColor !== nextColor) {
+    user.avatarColor = nextColor;
+    await user.save();
+  }
+  return user;
+};
 
 export const register = asyncHandler(async (req, res) => {
   const { name, username, email, password } = req.body;
@@ -33,15 +43,16 @@ export const register = asyncHandler(async (req, res) => {
     throw new AppError("Email or username is already in use.", 409);
   }
 
+  const normalizedUsername = username.toLowerCase();
+  const normalizedEmail = email.toLowerCase();
   const hashedPassword = await bcrypt.hash(password, 12);
-  const palette = ["#3B82F6", "#06B6D4", "#22C55E", "#F97316", "#8B5CF6", "#EF4444"];
 
   const user = await User.create({
     name,
-    username: username.toLowerCase(),
-    email: email.toLowerCase(),
+    username: normalizedUsername,
+    email: normalizedEmail,
     password: hashedPassword,
-    avatarColor: palette[Math.floor(Math.random() * palette.length)]
+    avatarColor: generateAvatarColor(`${normalizedUsername}:${normalizedEmail}`)
   });
 
   const token = signToken({ userId: user._id });
@@ -74,6 +85,8 @@ export const login = asyncHandler(async (req, res) => {
     throw new AppError("Invalid credentials.", 401);
   }
 
+  await syncAvatarColor(user);
+
   const token = signToken({ userId: user._id });
 
   res.json({
@@ -84,6 +97,7 @@ export const login = asyncHandler(async (req, res) => {
 });
 
 export const getProfile = asyncHandler(async (req, res) => {
+  await syncAvatarColor(req.user);
   const unreadNotifications = await Notification.countDocuments({ user: req.user._id, isRead: false });
 
   res.json({

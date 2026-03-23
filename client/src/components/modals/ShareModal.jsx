@@ -78,7 +78,7 @@ export const ShareModal = ({ open, onClose, file, onSubmit, onRemove, onUpdateSe
           </div>
         </form>
 
-        <div className="space-y-4 rounded-3xl border border-[#edf1f6] bg-[#fafcff] p-4">
+        <div className="space-y-4 rounded-3xl border border-[#edf1f6] bg-[#fcf8fb] p-4">
           <p className="text-sm font-semibold text-drive-text">Link and visibility</p>
           <Select label="Visibility" value={visibility} onChange={setVisibility} options={visibilityOptions} />
           <label className="flex items-center justify-between rounded-2xl border border-[#d7dce5] bg-white px-4 py-3 text-sm text-drive-text">
@@ -108,7 +108,7 @@ export const ShareModal = ({ open, onClose, file, onSubmit, onRemove, onUpdateSe
           <p className="text-sm font-semibold text-drive-text">People with access</p>
           {sharedUsers.length ? (
             sharedUsers.map((entry) => (
-              <div key={entry.user._id} className="flex items-center justify-between rounded-2xl bg-[#f8fbff] px-4 py-3 text-sm">
+              <div key={entry.user._id} className="flex items-center justify-between rounded-2xl bg-[#fbf6f9] px-4 py-3 text-sm">
                 <div>
                   <p className="font-medium text-drive-text">{entry.user.name}</p>
                   <p className="text-drive-subtext">@{entry.user.username} • {entry.role}</p>
@@ -124,3 +124,4 @@ export const ShareModal = ({ open, onClose, file, onSubmit, onRemove, onUpdateSe
     </Modal>
   );
 };
+

@@ -41,7 +41,7 @@ export const UploadModal = ({ open, onClose, onSubmit }) => {
       <form className="space-y-4" onSubmit={handleSubmit}>
         <Input label="Display name" placeholder="Quarterly roadmap.pdf" value={filename} onChange={(event) => setFilename(event.target.value)} />
         <label
-          className={`flex cursor-pointer flex-col items-center justify-center rounded-[24px] border border-dashed px-6 py-10 text-center text-sm transition ${dragActive ? "border-[#1a73e8] bg-[#eef5ff] text-drive-blue" : "border-slate-300 bg-slate-50 text-slate-500 hover:border-[#9dc0ff] hover:bg-[#f4f8ff]"}`}
+          className={`flex cursor-pointer flex-col items-center justify-center rounded-[24px] border border-dashed px-6 py-10 text-center text-sm transition ${dragActive ? "border-[#9d174d] bg-[#fae7ef] text-drive-blue" : "border-slate-300 bg-slate-50 text-slate-500 hover:border-[#e9b8c9] hover:bg-[#fbf2f7]"}`}
           onDragEnter={(event) => { event.preventDefault(); setDragActive(true); }}
           onDragOver={(event) => { event.preventDefault(); setDragActive(true); }}
           onDragLeave={(event) => { event.preventDefault(); setDragActive(false); }}
@@ -63,3 +63,6 @@ export const UploadModal = ({ open, onClose, onSubmit }) => {
     </Modal>
   );
 };
+
+
+

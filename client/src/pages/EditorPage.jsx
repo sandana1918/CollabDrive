@@ -46,7 +46,7 @@ const ToolbarButton = ({ active = false, disabled = false, compact = false, titl
   <button
     type="button"
     title={title}
-    className={`grid place-items-center rounded-lg border text-[14px] font-medium transition ${compact ? "h-9 min-w-9 px-2" : "h-9 min-w-[40px] px-2.5"} ${active ? "border-[#d2e3fc] bg-[#e8f0fe] text-[#174ea6]" : "border-transparent text-[#3c4043] hover:border-[#dadce0] hover:bg-[#f1f3f4]"} disabled:cursor-not-allowed disabled:opacity-45`}
+    className={`grid place-items-center rounded-lg border text-[14px] font-medium transition ${compact ? "h-9 min-w-9 px-2" : "h-9 min-w-[40px] px-2.5"} ${active ? "border-[#e9b8c9] bg-[#f5d0de] text-[#7a183f]" : "border-transparent text-[#4b3744] hover:border-[#e4d5de] hover:bg-[#f7eff4]"} disabled:cursor-not-allowed disabled:opacity-45`}
     onMouseDown={(event) => event.preventDefault()}
     onClick={onClick}
     disabled={disabled}
@@ -55,7 +55,7 @@ const ToolbarButton = ({ active = false, disabled = false, compact = false, titl
   </button>
 );
 
-const Divider = () => <div className="h-6 w-px bg-[#dadce0]" />;
+const Divider = () => <div className="h-6 w-px bg-[#e4d5de]" />;
 
 const ColorControl = ({ label, value, disabled, onPick }) => {
   const inputRef = useRef(null);
@@ -63,7 +63,7 @@ const ColorControl = ({ label, value, disabled, onPick }) => {
   return (
     <button
       type="button"
-      className="flex h-9 items-center gap-2 rounded-lg border border-transparent px-2.5 text-[14px] text-[#3c4043] transition hover:border-[#dadce0] hover:bg-[#f1f3f4] disabled:cursor-not-allowed disabled:opacity-45"
+      className="flex h-9 items-center gap-2 rounded-lg border border-transparent px-2.5 text-[14px] text-[#4b3744] transition hover:border-[#e4d5de] hover:bg-[#f7eff4] disabled:cursor-not-allowed disabled:opacity-45"
       onMouseDown={(event) => event.preventDefault()}
       onClick={() => inputRef.current?.click()}
       disabled={disabled}
@@ -83,7 +83,7 @@ const EditorToolbar = ({ editor, disabled, zoom, setZoom, onOpenVersions, onMana
   const currentFontSize = editor.getAttributes("textStyle")?.fontSize || "16px";
 
   return (
-    <div className="rounded-[20px] border border-[#e0e3e7] bg-white px-3 py-2 shadow-[0_1px_2px_rgba(60,64,67,0.12)]">
+    <div className="rounded-[20px] border border-[#eadfe6] bg-white px-3 py-2 shadow-[0_1px_2px_rgba(60,64,67,0.12)]">
       <div className="flex flex-wrap items-center gap-1.5">
         <div className="flex items-center gap-1 rounded-xl px-1 py-1">
           <ToolbarButton compact title="Undo" disabled={disabled || !editor.can().undo()} onClick={() => editor.chain().focus().undo().run()}>
@@ -113,7 +113,7 @@ const EditorToolbar = ({ editor, disabled, zoom, setZoom, onOpenVersions, onMana
           ]}
           disabled={disabled}
           className="min-w-[170px]"
-          buttonClassName="h-9 rounded-lg border border-transparent px-3 py-2 text-[14px] text-[#202124] hover:border-[#dadce0] hover:bg-[#f1f3f4]"
+          buttonClassName="h-9 rounded-lg border border-transparent px-3 py-2 text-[14px] text-[#202124] hover:border-[#e4d5de] hover:bg-[#f7eff4]"
           menuClassName="min-w-[220px]"
         />
 
@@ -123,7 +123,7 @@ const EditorToolbar = ({ editor, disabled, zoom, setZoom, onOpenVersions, onMana
           options={["12px", "14px", "16px", "18px", "24px"].map((value) => ({ value, label: value.replace("px", "") }))}
           disabled={disabled}
           className="min-w-[86px]"
-          buttonClassName="h-9 rounded-lg border border-transparent px-3 py-2 text-[14px] text-[#202124] hover:border-[#dadce0] hover:bg-[#f1f3f4]"
+          buttonClassName="h-9 rounded-lg border border-transparent px-3 py-2 text-[14px] text-[#202124] hover:border-[#e4d5de] hover:bg-[#f7eff4]"
           menuClassName="min-w-[110px]"
         />
 
@@ -153,9 +153,9 @@ const EditorToolbar = ({ editor, disabled, zoom, setZoom, onOpenVersions, onMana
         </div>
 
         <div className="ml-auto flex items-center gap-2 pl-2">
-          <button type="button" className="inline-flex items-center gap-2 rounded-full border border-[#dadce0] px-3 py-2 text-sm text-[#3c4043] transition hover:bg-[#f8f9fa]" onMouseDown={(event) => event.preventDefault()} onClick={() => setZoom((current) => Math.max(80, current - 10))}><MagnifyingGlassMinusIcon className="h-4 w-4" /></button>
-          <span className="rounded-full bg-[#f1f3f4] px-3 py-2 text-sm font-medium text-[#3c4043]">{zoom}%</span>
-          <button type="button" className="inline-flex items-center gap-2 rounded-full border border-[#dadce0] px-3 py-2 text-sm text-[#3c4043] transition hover:bg-[#f8f9fa]" onMouseDown={(event) => event.preventDefault()} onClick={() => setZoom((current) => Math.min(150, current + 10))}><MagnifyingGlassPlusIcon className="h-4 w-4" /></button>
+          <button type="button" className="inline-flex items-center gap-2 rounded-full border border-[#e4d5de] px-3 py-2 text-sm text-[#4b3744] transition hover:bg-[#f8f9fa]" onMouseDown={(event) => event.preventDefault()} onClick={() => setZoom((current) => Math.max(80, current - 10))}><MagnifyingGlassMinusIcon className="h-4 w-4" /></button>
+          <span className="rounded-full bg-[#f7eff4] px-3 py-2 text-sm font-medium text-[#4b3744]">{zoom}%</span>
+          <button type="button" className="inline-flex items-center gap-2 rounded-full border border-[#e4d5de] px-3 py-2 text-sm text-[#4b3744] transition hover:bg-[#f8f9fa]" onMouseDown={(event) => event.preventDefault()} onClick={() => setZoom((current) => Math.min(150, current + 10))}><MagnifyingGlassPlusIcon className="h-4 w-4" /></button>
           <Button variant="surface" onClick={onOpenVersions}>History</Button>
           <Button variant="surface" onClick={onToggleComments}>{showComments ? "Hide comments" : "Comments"}</Button>
           {canManageAccess ? <Button variant="surface" onClick={onManageAccess}>Manage access</Button> : null}
@@ -349,7 +349,7 @@ export const EditorPage = () => {
             left: coords.left - pageRect.left,
             top: coords.top - pageRect.top,
             label: entry.user.name || entry.user.username,
-            color: entry.user.avatarColor || "#1a73e8"
+            color: entry.user.avatarColor || "#9d174d"
           };
         } catch {
           return null;
@@ -494,24 +494,24 @@ export const EditorPage = () => {
   const latestEditor = versions[0]?.editedBy?.name || file?.lastEditedBy?.name || file?.owner?.name || "Unknown";
 
   if (loading || !editor) {
-    return <div className="flex min-h-screen items-center justify-center bg-[#f1f3f4]"><Spinner label="Loading document" /></div>;
+    return <div className="flex min-h-screen items-center justify-center bg-[#f7eff4]"><Spinner label="Loading document" /></div>;
   }
 
   return (
-    <div className="min-h-screen bg-[#f1f3f4] px-4 py-4 lg:px-6">
+    <div className="min-h-screen bg-[#f7eff4] px-4 py-4 lg:px-6">
       <div className="mx-auto max-w-[1720px] space-y-4">
-        <header className="rounded-[24px] border border-[#e0e3e7] bg-white px-5 py-4 shadow-[0_1px_3px_rgba(60,64,67,0.15)]">
+        <header className="rounded-[24px] border border-[#eadfe6] bg-white px-5 py-4 shadow-[0_1px_3px_rgba(60,64,67,0.15)]">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-center gap-4">
-              <button className="grid h-11 w-11 place-items-center rounded-full text-[#5f6368] transition hover:bg-[#f1f3f4]" onClick={() => navigate(user ? "/" : "/login")}>
+              <button className="grid h-11 w-11 place-items-center rounded-full text-[#6f6471] transition hover:bg-[#f7eff4]" onClick={() => navigate(user ? "/" : "/login")}>
                 <ArrowLeftIcon className="h-5 w-5" />
               </button>
-              <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#e8f0fe] text-[#1a73e8]">
+              <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#f5d0de] text-[#9d174d]">
                 <DocumentTextIcon className="h-7 w-7" />
               </div>
               <div>
                 <h1 className="text-[20px] font-medium tracking-tight text-[#202124]">{file?.filename}</h1>
-                <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-[#5f6368]">
+                <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-[#6f6471]">
                   <span className="inline-flex items-center gap-1.5">{canEdit ? <LockOpenIcon className="h-4 w-4" /> : <LockClosedIcon className="h-4 w-4" />} {role}</span>
                   <span className="inline-flex items-center gap-1.5"><UserGroupIcon className="h-4 w-4" /> {presenceLabel}</span>
                   <span className="inline-flex items-center gap-1.5"><ChatBubbleLeftEllipsisIcon className="h-4 w-4" /> Last edited by {latestEditor}</span>
@@ -521,17 +521,17 @@ export const EditorPage = () => {
 
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
               {authToken ? <PresenceBar presence={presence} /> : null}
-              <span className="inline-flex items-center rounded-full border border-[#d7dce1] bg-[#f8f9fa] px-4 py-2 text-sm text-[#3c4043]">{statusLabel}</span>
-              <Button onClick={saveNow} loading={saving} className="gap-2 bg-[#1a73e8] hover:bg-[#185abc]" disabled={!canEdit}><CloudArrowUpIcon className="h-4 w-4" /> Save</Button>
+              <span className="inline-flex items-center rounded-full border border-[#d7dce1] bg-[#f8f9fa] px-4 py-2 text-sm text-[#4b3744]">{statusLabel}</span>
+              <Button onClick={saveNow} loading={saving} className="gap-2 bg-[#9d174d] hover:bg-[#821843]" disabled={!canEdit}><CloudArrowUpIcon className="h-4 w-4" /> Save</Button>
               <div className="relative">
-                <button className="grid h-10 w-10 place-items-center rounded-full border border-[#dadce0] bg-white text-[#5f6368] transition hover:bg-[#f8f9fa]" onClick={() => setShowMenu((current) => !current)}>
+                <button className="grid h-10 w-10 place-items-center rounded-full border border-[#e4d5de] bg-white text-[#6f6471] transition hover:bg-[#f8f9fa]" onClick={() => setShowMenu((current) => !current)}>
                   <EllipsisVerticalIcon className="h-5 w-5" />
                 </button>
                 {showMenu ? (
-                  <div className="absolute right-0 top-[calc(100%+8px)] z-20 min-w-[220px] rounded-2xl border border-[#e0e3e7] bg-white p-2 shadow-[0_4px_12px_rgba(60,64,67,0.18)]">
-                    <button className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-[#202124] hover:bg-[#f1f3f4]" onClick={() => { setShowMenu(false); setShowVersions(true); }}><ArrowPathIcon className="h-4 w-4" /> Version history</button>
-                    <button className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-[#202124] hover:bg-[#f1f3f4]" onClick={() => { setShowMenu(false); setShowComments((current) => !current); }}><ChatBubbleLeftEllipsisIcon className="h-4 w-4" /> Comments</button>
-                    {canManageAccess ? <button className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-[#202124] hover:bg-[#f1f3f4]" onClick={() => { setShowMenu(false); setShowShare(true); }}><UserGroupIcon className="h-4 w-4" /> Manage access</button> : null}
+                  <div className="absolute right-0 top-[calc(100%+8px)] z-20 min-w-[220px] rounded-2xl border border-[#eadfe6] bg-white p-2 shadow-[0_4px_12px_rgba(60,64,67,0.18)]">
+                    <button className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-[#202124] hover:bg-[#f7eff4]" onClick={() => { setShowMenu(false); setShowVersions(true); }}><ArrowPathIcon className="h-4 w-4" /> Version history</button>
+                    <button className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-[#202124] hover:bg-[#f7eff4]" onClick={() => { setShowMenu(false); setShowComments((current) => !current); }}><ChatBubbleLeftEllipsisIcon className="h-4 w-4" /> Comments</button>
+                    {canManageAccess ? <button className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-[#202124] hover:bg-[#f7eff4]" onClick={() => { setShowMenu(false); setShowShare(true); }}><UserGroupIcon className="h-4 w-4" /> Manage access</button> : null}
                   </div>
                 ) : null}
               </div>
@@ -543,13 +543,13 @@ export const EditorPage = () => {
         <EditorToolbar editor={editor} disabled={!canEdit} zoom={zoom} setZoom={setZoom} onOpenVersions={() => setShowVersions(true)} onManageAccess={() => setShowShare(true)} onToggleComments={() => setShowComments((current) => !current)} canManageAccess={canManageAccess} showComments={showComments} />
 
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
-          <section className="relative rounded-[24px] border border-[#e0e3e7] bg-[#eef2f7] px-4 py-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] lg:px-8">
+          <section className="relative rounded-[24px] border border-[#eadfe6] bg-[#f3eaf0] px-4 py-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] lg:px-8">
             <div className="mx-auto max-w-[960px]">
               <div className="mb-3 overflow-hidden rounded-t-[14px] border border-[#d7dce1] border-b-0 bg-[#f8f9fa] shadow-[0_1px_1px_rgba(60,64,67,0.08)]">
                 <div className="grid grid-cols-8 gap-0 border-b border-[#e1e6ed] px-6 py-2 text-[11px] uppercase tracking-[0.16em] text-[#7a828d]">
                   {Array.from({ length: 8 }).map((_, index) => <span key={index}>{(index + 1) * 10}</span>)}
                 </div>
-                <div className="px-6 py-2 text-xs text-[#5f6368]">Type <span className="font-medium text-[#202124]">/</span> for quick insert commands. Rich comments are available in the side panel for commenters and editors.</div>
+                <div className="px-6 py-2 text-xs text-[#6f6471]">Type <span className="font-medium text-[#202124]">/</span> for quick insert commands. Rich comments are available in the side panel for commenters and editors.</div>
               </div>
               <div ref={pageRef} className="docs-page relative mx-auto min-h-[78vh] rounded-b-[4px] bg-white px-[72px] py-[64px]" style={{ zoom: `${zoom}%` }}>
                 <CursorOverlay cursors={cursorOverlays} />
@@ -569,16 +569,16 @@ export const EditorPage = () => {
       <Modal open={showVersions} onClose={() => setShowVersions(false)} title="Version history" description="Recent saves are available here without cluttering the main editing surface." sizeClassName="max-w-xl" bodyClassName="overflow-y-auto pr-1">
         <div className="space-y-3 pb-1">
           {versions.length ? versions.map((version) => (
-            <div key={version._id} className="rounded-2xl border border-[#e7ecf4] bg-[#fafcff] px-4 py-3">
+            <div key={version._id} className="rounded-2xl border border-[#e7ecf4] bg-[#fcf8fb] px-4 py-3">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-sm font-medium text-[#202124]">{version.editedBy?.name || "Unknown user"}</p>
-                  <p className="mt-1 text-xs text-[#5f6368]">{new Date(version.createdAt).toLocaleString()}</p>
+                  <p className="mt-1 text-xs text-[#6f6471]">{new Date(version.createdAt).toLocaleString()}</p>
                 </div>
                 {canEdit ? <Button variant="surface" onClick={() => handleRestoreVersion(version._id)}>Restore</Button> : null}
               </div>
             </div>
-          )) : <p className="text-sm text-[#5f6368]">No saved versions yet.</p>}
+          )) : <p className="text-sm text-[#6f6471]">No saved versions yet.</p>}
         </div>
       </Modal>
 
@@ -586,5 +586,9 @@ export const EditorPage = () => {
     </div>
   );
 };
+
+
+
+
 
 

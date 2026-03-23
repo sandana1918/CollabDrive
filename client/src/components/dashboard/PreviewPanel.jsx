@@ -25,32 +25,32 @@ export const PreviewPanel = ({ file, open, onClose, onOpen, onShare, onCopyLink,
               <h3 className="mt-2 break-words text-[24px] font-medium leading-tight text-drive-text">{file.filename}</h3>
               <p className="mt-1 text-sm capitalize text-drive-subtext">{file.accessSummary} • {file.accessRole}</p>
             </div>
-            <button className="grid h-10 w-10 place-items-center rounded-full text-drive-subtext transition hover:bg-[#f1f3f4] hover:text-drive-text" onClick={onClose}>
+            <button className="grid h-10 w-10 place-items-center rounded-full text-drive-subtext transition hover:bg-[#f7eff4] hover:text-drive-text" onClick={onClose}>
               <XMarkIcon className="h-5 w-5" />
             </button>
           </div>
 
           <div className="mt-5 min-h-0 flex-1 overflow-y-auto pr-1">
-            <div className="rounded-[20px] border border-[#edf2f8] bg-[#f8fbff] p-4">
+            <div className="rounded-[20px] border border-[#eee2e8] bg-[#fbf6f9] p-4">
               {file.preview?.kind === "image" ? <img src={filesApi.downloadUrl(file.id)} alt={file.filename} className="h-44 w-full rounded-2xl object-cover" /> : null}
               {file.preview?.kind === "pdf" ? <iframe title={file.filename} src={filesApi.downloadUrl(file.id)} className="h-52 w-full rounded-2xl border border-[#dfe7f3] bg-white" /> : null}
               {file.preview?.kind === "none" ? <p className="break-words text-sm leading-6 text-[#475467]">{file.contentPreview || "No preview available for this item yet."}</p> : null}
             </div>
 
             <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-              <div className="rounded-2xl bg-[#f8fbff] px-4 py-3">
+              <div className="rounded-2xl bg-[#fbf6f9] px-4 py-3">
                 <p className="text-[11px] uppercase tracking-[0.12em] text-drive-subtext">Modified</p>
                 <p className="mt-2 font-medium text-drive-text">{formatDateTime(file.updatedAt)}</p>
               </div>
-              <div className="rounded-2xl bg-[#f8fbff] px-4 py-3">
+              <div className="rounded-2xl bg-[#fbf6f9] px-4 py-3">
                 <p className="text-[11px] uppercase tracking-[0.12em] text-drive-subtext">Last opened</p>
                 <p className="mt-2 font-medium text-drive-text">{formatDateTime(file.lastOpenedAt)}</p>
               </div>
-              <div className="rounded-2xl bg-[#f8fbff] px-4 py-3">
+              <div className="rounded-2xl bg-[#fbf6f9] px-4 py-3">
                 <p className="text-[11px] uppercase tracking-[0.12em] text-drive-subtext">Last edited by</p>
                 <p className="mt-2 break-words font-medium text-drive-text">{file.lastEditedBy?.name || file.owner?.name || "Unknown"}</p>
               </div>
-              <div className="rounded-2xl bg-[#f8fbff] px-4 py-3">
+              <div className="rounded-2xl bg-[#fbf6f9] px-4 py-3">
                 <p className="text-[11px] uppercase tracking-[0.12em] text-drive-subtext">Size</p>
                 <p className="mt-2 font-medium text-drive-text">{file.category === "file" ? formatBytes(file.size) : "-"}</p>
               </div>
@@ -64,11 +64,11 @@ export const PreviewPanel = ({ file, open, onClose, onOpen, onShare, onCopyLink,
               <Button variant="surface" onClick={() => onTogglePin(file)}>{file.isPinned ? "Unpin" : "Pin"}</Button>
             </div>
 
-            <div className="mt-5 border-t border-[#edf2f8] pt-4">
+            <div className="mt-5 border-t border-[#eee2e8] pt-4">
               <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-drive-subtext">Activity timeline</p>
               <div className="mt-3 space-y-3">
                 {(file.activity || []).length ? (file.activity || []).slice(0, 8).map((entry, index) => (
-                  <div key={`${entry.createdAt}-${index}`} className="rounded-2xl border border-[#edf2f8] bg-[#fafcff] px-4 py-3">
+                  <div key={`${entry.createdAt}-${index}`} className="rounded-2xl border border-[#eee2e8] bg-[#fcf8fb] px-4 py-3">
                     <p className="text-sm font-medium text-drive-text">{entry.actor?.name || "System"} {entry.action}</p>
                     <p className="mt-1 text-xs text-drive-subtext">{formatDateTime(entry.createdAt)}</p>
                   </div>
@@ -77,7 +77,7 @@ export const PreviewPanel = ({ file, open, onClose, onOpen, onShare, onCopyLink,
             </div>
           </div>
 
-          <div className="mt-4 flex flex-wrap gap-2 border-t border-[#edf2f8] pt-4">
+          <div className="mt-4 flex flex-wrap gap-2 border-t border-[#eee2e8] pt-4">
             {file.isTrashed ? (
               <>
                 <Button variant="surface" onClick={() => onRestore(file)}>Restore</Button>
@@ -92,3 +92,5 @@ export const PreviewPanel = ({ file, open, onClose, onOpen, onShare, onCopyLink,
     </aside>
   );
 };
+
+

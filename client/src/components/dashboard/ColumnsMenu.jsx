@@ -21,7 +21,7 @@ export const ColumnsMenu = ({ open, onClose, visibleColumns, onToggle }) => {
         { key: "lastOpened", label: "Last opened" },
         { key: "role", label: "Role" }
       ].map((column) => (
-        <label key={column.key} className="flex items-center justify-between rounded-xl px-2 py-2 text-sm text-drive-text hover:bg-[#f5f8fd]">
+        <label key={column.key} className="flex items-center justify-between rounded-xl px-2 py-2 text-sm text-drive-text hover:bg-[#fbf6f9]">
           <span>{column.label}</span>
           <input type="checkbox" checked={visibleColumns[column.key]} onChange={() => onToggle(column.key)} />
         </label>
@@ -29,3 +29,4 @@ export const ColumnsMenu = ({ open, onClose, visibleColumns, onToggle }) => {
     </div>
   );
 };
+

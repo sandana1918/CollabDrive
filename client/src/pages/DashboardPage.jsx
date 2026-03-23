@@ -71,13 +71,13 @@ const isTypingTarget = (target) => {
 
 const EmptyIllustration = () => (
   <svg width="180" height="120" viewBox="0 0 180 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="mx-auto">
-    <rect x="15" y="24" width="150" height="78" rx="18" fill="#EFF5FF" />
-    <rect x="40" y="16" width="54" height="22" rx="11" fill="#DCE9FF" />
-    <rect x="42" y="44" width="96" height="10" rx="5" fill="#C7DAFF" />
-    <rect x="42" y="62" width="76" height="10" rx="5" fill="#D9E7FB" />
-    <circle cx="132" cy="33" r="15" fill="#E8F0FE" />
-    <path d="M132 25V41" stroke="#1A73E8" strokeWidth="2.5" strokeLinecap="round" />
-    <path d="M124 33H140" stroke="#1A73E8" strokeWidth="2.5" strokeLinecap="round" />
+    <rect x="15" y="24" width="150" height="78" rx="18" fill="#f7eef3" />
+    <rect x="40" y="16" width="54" height="22" rx="11" fill="#f1dce8" />
+    <rect x="42" y="44" width="96" height="10" rx="5" fill="#e7c1d3" />
+    <rect x="42" y="62" width="76" height="10" rx="5" fill="#eed7e2" />
+    <circle cx="132" cy="33" r="15" fill="#f3e2ea" />
+    <path d="M132 25V41" stroke="#9d174d" strokeWidth="2.5" strokeLinecap="round" />
+    <path d="M124 33H140" stroke="#9d174d" strokeWidth="2.5" strokeLinecap="round" />
   </svg>
 );
 
@@ -189,7 +189,7 @@ export const DashboardPage = () => {
       }
       if (event.key === "/") {
         event.preventDefault();
-        document.querySelector('input[placeholder="Search in Drive"]')?.focus();
+        document.querySelector('input[placeholder="Search in CollabDrive"]')?.focus();
       }
       if (event.key === "Delete" && selectedIds.length) {
         event.preventDefault();
@@ -519,8 +519,8 @@ export const DashboardPage = () => {
   const listGridColumns = `48px minmax(240px,1.6fr) minmax(170px,0.85fr) ${visibleColumns.lastOpened ? "minmax(132px,0.72fr)" : ""} ${visibleColumns.role ? "minmax(112px,0.52fr)" : ""} minmax(132px,0.72fr) minmax(88px,0.38fr) 68px`;
 
   return (
-    <div className="min-h-screen bg-drive-bg p-4">
-      <div className="mx-auto flex max-w-[1760px] flex-col gap-5 lg:flex-row">
+    <div className="min-h-screen bg-drive-bg lg:pr-4">
+      <div className="mx-auto flex min-h-screen max-w-[1760px] flex-col gap-5 lg:flex-row lg:items-stretch">
         <Sidebar
           activeSection={activeSection}
           setActiveSection={(section) => { setActiveSection(section); setIsSidebarOpen(false); }}
@@ -533,7 +533,7 @@ export const DashboardPage = () => {
           storageLimitBytes={STORAGE_LIMIT_BYTES}
         />
 
-        <main className="min-w-0 flex-1 space-y-4">
+        <main className="min-w-0 flex-1 space-y-4 px-4 py-4 lg:px-0 lg:py-4">
           <Topbar
             user={user}
             search={search}
@@ -559,11 +559,11 @@ export const DashboardPage = () => {
                   <FolderOpenIcon className="h-4 w-4" />
                   <span>{meta.label}</span>
                   {breadcrumbs.length ? <ChevronRightIcon className="h-4 w-4" /> : null}
-                  {breadcrumbs.length ? <button className="rounded-full px-2 py-1 text-sm text-drive-subtext transition hover:bg-[#eef3fb]" onClick={() => setParentId("root")}>Home</button> : <span className="rounded-full px-2 py-1">Home</span>}
+                  {breadcrumbs.length ? <button className="rounded-full px-2 py-1 text-sm text-drive-subtext transition hover:bg-[#f6edf2]" onClick={() => setParentId("root")}>Home</button> : <span className="rounded-full px-2 py-1">Home</span>}
                   {breadcrumbs.map((crumb) => (
                     <div key={crumb.id} className="flex items-center gap-2">
                       <ChevronRightIcon className="h-4 w-4" />
-                      <button className="rounded-full px-2 py-1 text-sm text-drive-subtext transition hover:bg-[#eef3fb]" onClick={() => setParentId(crumb.id)}>{crumb.filename}</button>
+                      <button className="rounded-full px-2 py-1 text-sm text-drive-subtext transition hover:bg-[#f6edf2]" onClick={() => setParentId(crumb.id)}>{crumb.filename}</button>
                     </div>
                   ))}
                 </div>
@@ -572,9 +572,9 @@ export const DashboardPage = () => {
               </div>
 
               <div className="flex flex-col gap-3 xl:items-end">
-                <div className="relative flex flex-wrap items-center gap-2 rounded-full bg-[#f5f8fd] p-1.5">
-                  <button className={`rounded-full px-4 py-2 text-sm font-medium transition ${viewMode === "list" ? "bg-[#dbeafe] text-[#174ea6]" : "text-drive-subtext hover:bg-white"}`} onClick={async () => { setViewMode("list"); await persistPreferences({ viewMode: "list" }); }}><ListBulletIcon className="h-5 w-5" /></button>
-                  <button className={`rounded-full px-4 py-2 text-sm font-medium transition ${viewMode === "grid" ? "bg-[#dbeafe] text-[#174ea6]" : "text-drive-subtext hover:bg-white"}`} onClick={async () => { setViewMode("grid"); await persistPreferences({ viewMode: "grid" }); }}><Squares2X2Icon className="h-5 w-5" /></button>
+                <div className="relative flex flex-wrap items-center gap-2 rounded-full bg-[#fcf8fb] p-1.5">
+                  <button className={`rounded-full px-4 py-2 text-sm font-medium transition ${viewMode === "list" ? "bg-[#f5d0de] text-[#7a183f]" : "text-drive-subtext hover:bg-white"}`} onClick={async () => { setViewMode("list"); await persistPreferences({ viewMode: "list" }); }}><ListBulletIcon className="h-5 w-5" /></button>
+                  <button className={`rounded-full px-4 py-2 text-sm font-medium transition ${viewMode === "grid" ? "bg-[#f5d0de] text-[#7a183f]" : "text-drive-subtext hover:bg-white"}`} onClick={async () => { setViewMode("grid"); await persistPreferences({ viewMode: "grid" }); }}><Squares2X2Icon className="h-5 w-5" /></button>
                   <div className="relative">
                     <Button variant="surface" className="gap-2" onClick={() => setColumnsOpen((current) => !current)}><AdjustmentsHorizontalIcon className="h-4 w-4" /> Columns</Button>
                     <ColumnsMenu open={columnsOpen} onClose={() => setColumnsOpen(false)} visibleColumns={visibleColumns} onToggle={(key) => setVisibleColumns((current) => ({ ...current, [key]: !current[key] }))} />
@@ -585,7 +585,7 @@ export const DashboardPage = () => {
 
                 <div className="grid grid-cols-3 gap-3 xl:min-w-[420px]">
                   {metrics.map((metric) => (
-                    <div key={metric.label} className="rounded-[20px] bg-[#f8fbff] px-4 py-3 shadow-[0_4px_16px_rgba(15,23,42,0.04)]">
+                    <div key={metric.label} className="rounded-[20px] bg-[#fcf8fb] px-4 py-3 shadow-[0_8px_20px_rgba(74,21,75,0.06)]">
                       <p className="text-xs uppercase tracking-[0.18em] text-drive-subtext">{metric.label}</p>
                       <p className="mt-2 text-[2.3rem] font-medium leading-none tracking-tight text-drive-text">{String(metric.value).padStart(2, "0")}</p>
                       <p className="mt-1 text-xs text-drive-subtext">{metric.helper}</p>
@@ -598,14 +598,14 @@ export const DashboardPage = () => {
 
           <section className="rounded-[28px] bg-white/88 px-6 py-4 shadow-shell backdrop-blur-xl">
             <div className="mb-4 flex flex-wrap items-center gap-3">
-              <Select value={typeFilter} onChange={setTypeFilter} options={filterOptions.type} className="min-w-[160px]" buttonClassName="h-11 min-w-[160px] rounded-full border border-[#d9e1ee] px-5 py-3 text-[15px] shadow-[0_1px_2px_rgba(60,64,67,0.06)]" menuClassName="min-w-[220px]" />
-              <Select value={ownerFilter} onChange={setOwnerFilter} options={filterOptions.owner} className="min-w-[190px]" buttonClassName="h-11 min-w-[190px] rounded-full border border-[#d9e1ee] px-5 py-3 text-[15px] shadow-[0_1px_2px_rgba(60,64,67,0.06)]" menuClassName="min-w-[240px]" />
-              <Select value={sortBy} onChange={setSortBy} options={filterOptions.sort} className="min-w-[190px]" buttonClassName="h-11 min-w-[190px] rounded-full border border-[#d9e1ee] px-5 py-3 text-[15px] shadow-[0_1px_2px_rgba(60,64,67,0.06)]" menuClassName="min-w-[220px]" />
+              <Select value={typeFilter} onChange={setTypeFilter} options={filterOptions.type} className="min-w-[160px]" buttonClassName="h-11 min-w-[160px] rounded-full border border-[#e7d9e1] px-5 py-3 text-[15px] shadow-[0_1px_2px_rgba(60,64,67,0.06)]" menuClassName="min-w-[220px]" />
+              <Select value={ownerFilter} onChange={setOwnerFilter} options={filterOptions.owner} className="min-w-[190px]" buttonClassName="h-11 min-w-[190px] rounded-full border border-[#e7d9e1] px-5 py-3 text-[15px] shadow-[0_1px_2px_rgba(60,64,67,0.06)]" menuClassName="min-w-[240px]" />
+              <Select value={sortBy} onChange={setSortBy} options={filterOptions.sort} className="min-w-[190px]" buttonClassName="h-11 min-w-[190px] rounded-full border border-[#e7d9e1] px-5 py-3 text-[15px] shadow-[0_1px_2px_rgba(60,64,67,0.06)]" menuClassName="min-w-[220px]" />
             </div>
 
             {someSelected ? (
-              <div className="mb-4 flex flex-wrap items-center gap-2 rounded-[22px] border border-[#d6e4ff] bg-[#eef5ff] px-4 py-3 shadow-[0_6px_18px_rgba(26,115,232,0.08)]">
-                <span className="mr-2 text-sm font-medium text-[#174ea6]">{selectedIds.length} selected</span>
+              <div className="mb-4 flex flex-wrap items-center gap-2 rounded-[22px] border border-[#edc8d7] bg-[#f9e8ef] px-4 py-3 shadow-[0_8px_20px_rgba(157,23,77,0.10)]">
+                <span className="mr-2 text-sm font-medium text-[#7a183f]">{selectedIds.length} selected</span>
                 <Button variant="surface" className="gap-2" onClick={() => handleBulkAction(selectedFiles.every((file) => file.isStarred) ? "unstar" : "star")}><StarIcon className="h-4 w-4" /> {selectedFiles.every((file) => file.isStarred) ? "Unstar" : "Star"}</Button>
                 <Button variant="surface" className="gap-2" onClick={() => handleBulkAction(selectedFiles.every((file) => file.isPinned) ? "unpin" : "pin")}><BookmarkIcon className="h-4 w-4" /> {selectedFiles.every((file) => file.isPinned) ? "Unpin" : "Pin"}</Button>
                 <Button variant="surface" className="gap-2" onClick={() => setShowMove(true)}><ArrowsRightLeftIcon className="h-4 w-4" /> Move</Button>
@@ -620,7 +620,7 @@ export const DashboardPage = () => {
             {loading ? <SkeletonList rows={6} /> : null}
 
             {!loading && !filteredFiles.length ? (
-              <div className="grid min-h-[320px] place-items-center rounded-[24px] bg-[#f8fbff] px-6 text-center">
+              <div className="grid min-h-[320px] place-items-center rounded-[24px] bg-[#fcf8fb] px-6 text-center">
                 <div>
                   <EmptyIllustration />
                   <p className="mt-4 text-2xl font-medium text-drive-text">Nothing here yet</p>
@@ -648,11 +648,11 @@ export const DashboardPage = () => {
                 </div>
               ) : (
                 <div className="grid gap-4">
-                  <div className="overflow-hidden rounded-[24px] border border-[#e4ebf4] bg-white">
+                  <div className="overflow-hidden rounded-[24px] border border-[#eadfe6] bg-white">
                     <div className="overflow-x-auto">
                       <div className="min-w-[1080px]">
-                        <div className="grid min-h-[54px] items-center bg-[#f8fbff] px-4 text-sm font-medium text-drive-subtext" style={{ gridTemplateColumns: listGridColumns }}>
-                          <div className="flex justify-center"><input type="checkbox" className="h-4 w-4 rounded border-[#c7d2e3] text-[#1a73e8]" checked={Boolean(allSelected)} onChange={(event) => handleSelectAll(event.target.checked)} /></div>
+                        <div className="grid min-h-[54px] items-center bg-[#fcf8fb] px-4 text-sm font-medium text-drive-subtext" style={{ gridTemplateColumns: listGridColumns }}>
+                          <div className="flex justify-center"><input type="checkbox" className="h-4 w-4 rounded border-[#d8c4cf] text-[#9d174d]" checked={Boolean(allSelected)} onChange={(event) => handleSelectAll(event.target.checked)} /></div>
                           <div>Name</div>
                           <div>Owner</div>
                           {visibleColumns.lastOpened ? <div>Last opened</div> : null}
@@ -721,18 +721,18 @@ export const DashboardPage = () => {
 
       <Modal open={showHelp} onClose={() => setShowHelp(false)} title="Workspace help" description="A quick guide to the enterprise features now built into CollabDrive.">
         <div className="space-y-3 text-sm text-drive-subtext">
-          <p>Use folders to create nested hierarchies, drag selected items into folders, manage sharing from the preview or row menu, and use bulk actions after single-select or multi-select like Google Drive.</p>
+          <p>Use folders to create nested hierarchies, drag selected items into folders, manage sharing from the preview or row menu, and use bulk actions after single-select or multi-select at enterprise scale.</p>
           <p>Keyboard shortcuts: press <span className="font-medium text-drive-text">N</span> for a new document, <span className="font-medium text-drive-text">/</span> to jump into search, <span className="font-medium text-drive-text">Delete</span> to trash selected items, and <span className="font-medium text-drive-text">Enter</span> to open the current selection.</p>
         </div>
       </Modal>
 
       <Modal open={showSettings} onClose={() => setShowSettings(false)} title="Workspace settings" description="Preferences are saved to your account on the backend.">
         <div className="space-y-4 text-sm text-drive-subtext">
-          <div className="flex items-center justify-between rounded-2xl bg-[#f8fbff] px-4 py-3">
+          <div className="flex items-center justify-between rounded-2xl bg-[#fcf8fb] px-4 py-3">
             <span>Default view mode</span>
             <span className="font-medium text-drive-text capitalize">{viewMode}</span>
           </div>
-          <div className="flex items-center justify-between rounded-2xl bg-[#f8fbff] px-4 py-3">
+          <div className="flex items-center justify-between rounded-2xl bg-[#fcf8fb] px-4 py-3">
             <span>Density</span>
             <span className="font-medium text-drive-text">{denseMode ? "Dense" : "Comfortable"}</span>
           </div>
@@ -742,7 +742,7 @@ export const DashboardPage = () => {
       <Modal open={showActivity} onClose={() => setShowActivity(false)} title="Activity" description="Recent audit-style activity across the files you can access.">
         <div className="space-y-3">
           {activity.length ? activity.map((entry) => (
-            <div key={entry.id} className="rounded-2xl border border-[#e7ecf4] bg-[#fafcff] px-4 py-3">
+            <div key={entry.id} className="rounded-2xl border border-[#e7ecf4] bg-[#fcf8fb] px-4 py-3">
               <p className="text-sm font-medium text-drive-text">{entry.actor?.name || "System"} {entry.action}</p>
               <p className="mt-1 text-sm text-drive-subtext">{entry.file?.filename}</p>
               <p className="mt-1 text-xs text-drive-subtext">{new Date(entry.createdAt).toLocaleString()}</p>
@@ -753,6 +753,11 @@ export const DashboardPage = () => {
     </div>
   );
 };
+
+
+
+
+
 
 
 

@@ -4,21 +4,21 @@ export default {
   theme: {
     extend: {
       boxShadow: {
-        soft: "0 10px 30px rgba(31, 41, 55, 0.08)",
-        card: "0 18px 40px rgba(31, 41, 55, 0.10)",
-        shell: "0 24px 60px rgba(31, 41, 55, 0.08)"
+        soft: "0 10px 30px rgba(76, 29, 65, 0.10)",
+        card: "0 18px 40px rgba(76, 29, 65, 0.12)",
+        shell: "0 24px 60px rgba(76, 29, 65, 0.12)"
       },
       colors: {
-        ink: "#1f1f1f",
+        ink: "#23151f",
         drive: {
-          blue: "#1a73e8",
-          blueSoft: "#e8f0fe",
-          bg: "#f6f8fc",
-          line: "#dde3ee",
-          text: "#1f1f1f",
-          subtext: "#5f6368",
+          blue: "#9d174d",
+          blueSoft: "#f5d0de",
+          bg: "#f7f3f6",
+          line: "#e7d9e1",
+          text: "#23151f",
+          subtext: "#6f6471",
           panel: "#ffffff",
-          select: "#c2e7ff"
+          select: "#e9b8c9"
         }
       }
     }

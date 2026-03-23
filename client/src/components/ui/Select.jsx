@@ -51,7 +51,7 @@ export const Select = ({
           type="button"
           className={clsx(
             "flex w-full items-center justify-between gap-3 border bg-white text-left text-sm text-drive-text outline-none transition disabled:cursor-not-allowed disabled:opacity-55",
-            "focus:border-drive-blue focus:ring-4 focus:ring-[#d7e5ff]",
+            "focus:border-drive-blue focus:ring-4 focus:ring-[#f5d0de]",
             buttonClassName || "rounded-2xl border-drive-line px-4 py-3"
           )}
           onClick={() => !disabled && setOpen((current) => !current)}
@@ -60,11 +60,11 @@ export const Select = ({
           aria-haspopup="listbox"
         >
           <span className="truncate">{renderValue ? renderValue(selectedOption) : selectedOption?.label || placeholder}</span>
-          <ChevronDownIcon className={clsx("h-4 w-4 text-[#5f6368] transition", open && "rotate-180")} />
+          <ChevronDownIcon className={clsx("h-4 w-4 text-[#7d6f78] transition", open && "rotate-180")} />
         </button>
 
         {open ? (
-          <div className={clsx("absolute left-0 top-[calc(100%+8px)] z-30 min-w-full overflow-hidden rounded-2xl border border-[#e0e3e7] bg-white py-1 shadow-[0_12px_24px_rgba(60,64,67,0.18)]", menuClassName)} role="listbox">
+          <div className={clsx("absolute left-0 top-[calc(100%+8px)] z-30 min-w-full overflow-hidden rounded-2xl border border-[#eadfe6] bg-white py-1 shadow-[0_16px_32px_rgba(74,21,75,0.16)]", menuClassName)} role="listbox">
             {options.map((option) => {
               const selected = option.value === value;
               return (
@@ -73,7 +73,7 @@ export const Select = ({
                   type="button"
                   className={clsx(
                     "flex w-full items-center justify-between px-3 py-2.5 text-left text-sm transition",
-                    selected ? "bg-[#e8f0fe] text-[#174ea6]" : "text-[#202124] hover:bg-[#f1f3f4]"
+                    selected ? "bg-[#f5d0de] text-[#7a183f]" : "text-[#23151f] hover:bg-[#fbf6f9]"
                   )}
                   onClick={() => {
                     onChange(option.value);

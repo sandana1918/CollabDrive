@@ -4,22 +4,22 @@
 
 :root {
   font-family: "Inter", sans-serif;
-  color: #1f1f1f;
-  background: #f6f8fc;
+  color: #23151f;
+  background: #f7f3f6;
 }
 
 html {
-  background: #f6f8fc;
+  background: #f7f3f6;
 }
 
 body {
   margin: 0;
   min-height: 100vh;
-  color: #1f1f1f;
+  color: #23151f;
   background:
-    radial-gradient(circle at top left, rgba(166, 189, 248, 0.28), transparent 22%),
-    radial-gradient(circle at top right, rgba(214, 228, 255, 0.55), transparent 24%),
-    linear-gradient(180deg, #f8faff 0%, #f5f7fb 42%, #eef3fb 100%);
+    radial-gradient(circle at top left, rgba(157, 23, 77, 0.12), transparent 22%),
+    radial-gradient(circle at top right, rgba(245, 208, 222, 0.7), transparent 24%),
+    linear-gradient(180deg, #fbf8fa 0%, #f6f1f5 44%, #eee6ed 100%);
 }
 
 * {
@@ -43,7 +43,7 @@ select {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(170, 180, 198, 0.9);
+  background: rgba(142, 118, 133, 0.9);
   border-radius: 999px;
   border: 2px solid transparent;
   background-clip: padding-box;
@@ -58,17 +58,17 @@ select {
 
 .drive-grid {
   background-image:
-    linear-gradient(to right, rgba(210, 219, 236, 0.18) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(210, 219, 236, 0.18) 1px, transparent 1px);
+    linear-gradient(to right, rgba(223, 207, 217, 0.28) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(223, 207, 217, 0.28) 1px, transparent 1px);
   background-size: 24px 24px;
 }
 
 .doc-page-shadow,
 .docs-page {
   box-shadow:
-    0 1px 2px rgba(16, 24, 40, 0.06),
-    0 1px 3px rgba(16, 24, 40, 0.1),
-    0 14px 32px rgba(17, 24, 39, 0.08);
+    0 1px 2px rgba(36, 20, 31, 0.06),
+    0 1px 3px rgba(36, 20, 31, 0.1),
+    0 14px 32px rgba(76, 29, 65, 0.08);
 }
 
 .docs-placeholder {
@@ -76,7 +76,7 @@ select {
   position: absolute;
   left: 72px;
   top: 64px;
-  color: #9aa0a6;
+  color: #998b96;
   font-size: 16px;
 }
 
@@ -90,7 +90,7 @@ select {
   color: #202124;
   font-size: 16px;
   line-height: 1.75;
-  caret-color: #1a73e8;
+  caret-color: #9d174d;
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -131,9 +131,9 @@ select {
 
 .collab-editor .ProseMirror blockquote {
   margin: 1.4em 0;
-  border-left: 3px solid #dadce0;
+  border-left: 3px solid #ddc9d4;
   padding-left: 1rem;
-  color: #5f6368;
+  color: #6f6471;
 }
 
 .collab-editor .ProseMirror mark {
@@ -152,3 +152,5 @@ select {
 .collab-editor .ProseMirror u {
   text-underline-offset: 0.16em;
 }
+
+
