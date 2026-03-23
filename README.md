@@ -134,4 +134,4 @@ npm --prefix client run dev
 - Local uploads are stored in `server/uploads`
 - Document editing uses last-write-wins sync, per your requirement
 - Rich text is intentionally not included; the editor is plain text / markdown focused
-- The current implementation is scaffolded for production structure, but dependency installation and end-to-end runtime validation still need to be run in the target environment
+- The current implementation is scaffolded for production structure, but dependency installation and end-to-end runtime validation still need to be run in the target environment.
