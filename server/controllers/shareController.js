@@ -61,6 +61,11 @@ export const updateSharingSettings = asyncHandler(async (req, res) => {
     file.linkShare.enabled = true;
   }
 
+  // Link and public access are intentionally read-only; editing is granted through direct user shares.
+  if (file.visibility === "public" || file.linkShare.enabled) {
+    file.linkShare.role = "viewer";
+  }
+
   if (file.linkShare.enabled && !file.linkShare.token) {
     file.linkShare.token = createShareToken();
   }

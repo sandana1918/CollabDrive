@@ -34,6 +34,10 @@ export const getFileAccess = (file, userId, linkToken = null) => {
   }
 
   if ((file.visibility === "link" || file.linkShare?.enabled) && linkToken && file.linkShare.token === linkToken) {
+    if (!userIdString) {
+      return "viewer";
+    }
+
     return file.linkShare.role || "viewer";
   }
 
@@ -53,7 +57,8 @@ export const ensureFileAccess = async (
   const file = await File.findOne(query)
     .populate("owner", "name email username avatarColor")
     .populate("sharedWith.user", "name email username avatarColor")
-    .populate("activity.actor", "name username")
+    .populate("comments.user", "name email username avatarColor")
+    .populate("activity.actor", "name username avatarColor")
     .populate("parent", "filename parent");
 
   if (!file) {

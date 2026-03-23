@@ -19,10 +19,15 @@ export const filesApi = {
   createFolder: (payload) => api.post("/files/folders", payload),
   getDocument: (id, params) => api.get(`/files/${id}/content`, { params }),
   saveDocument: (id, payload) => api.patch(`/files/${id}/content`, payload),
+  rename: (id, payload) => api.patch(`/files/${id}/rename`, payload),
   move: (id, payload) => api.patch(`/files/${id}/move`, payload),
+  bulk: (payload) => api.post("/files/bulk", payload),
   toggleFavorite: (id, kind) => api.patch(`/files/${id}/favorite/${kind}`),
   trash: (id) => api.patch(`/files/${id}/trash`),
   restore: (id) => api.patch(`/files/${id}/restore`),
+  addComment: (id, payload) => api.post(`/files/${id}/comments`, payload),
+  resolveComment: (id, commentId, payload) => api.patch(`/files/${id}/comments/${commentId}`, payload),
+  restoreVersion: (id, versionId) => api.post(`/files/${id}/versions/${versionId}/restore`),
   delete: (id) => api.delete(`/files/${id}`),
   downloadUrl: (id, linkToken = null) => {
     const token = localStorage.getItem("collabdrive-token");

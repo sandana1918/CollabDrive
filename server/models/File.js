@@ -32,6 +32,30 @@ const activitySchema = new mongoose.Schema(
   { _id: false }
 );
 
+const commentSchema = new mongoose.Schema(
+  {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true
+    },
+    message: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    anchorText: {
+      type: String,
+      default: ""
+    },
+    resolved: {
+      type: Boolean,
+      default: false
+    }
+  },
+  { timestamps: true }
+);
+
 const fileSchema = new mongoose.Schema(
   {
     filename: {
@@ -123,6 +147,11 @@ const fileSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User"
     },
+    trashedParent: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "File",
+      default: null
+    },
     preview: {
       kind: {
         type: String,
@@ -133,6 +162,7 @@ const fileSchema = new mongoose.Schema(
     },
     lastOpenedAt: Date,
     tags: [String],
+    comments: [commentSchema],
     activity: [activitySchema]
   },
   { timestamps: true }

@@ -2,6 +2,19 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { Modal } from "../ui/Modal";
+import { Select } from "../ui/Select";
+
+const roleOptions = [
+  { value: "viewer", label: "Viewer" },
+  { value: "commenter", label: "Commenter" },
+  { value: "editor", label: "Editor" }
+];
+
+const visibilityOptions = [
+  { value: "private", label: "Private" },
+  { value: "link", label: "Anyone with link" },
+  { value: "public", label: "Public view" }
+];
 
 export const ShareModal = ({ open, onClose, file, onSubmit, onRemove, onUpdateSettings, onRevokeAll }) => {
   const [identifier, setIdentifier] = useState("");
@@ -9,13 +22,13 @@ export const ShareModal = ({ open, onClose, file, onSubmit, onRemove, onUpdateSe
   const [loading, setLoading] = useState(false);
   const [visibility, setVisibility] = useState("private");
   const [linkEnabled, setLinkEnabled] = useState(false);
-  const [linkRole, setLinkRole] = useState("viewer");
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     setVisibility(file?.visibility || "private");
     setLinkEnabled(Boolean(file?.linkShare?.enabled));
-    setLinkRole(file?.linkShare?.role || "viewer");
-  }, [file]);
+    setCopied(false);
+  }, [file, open]);
 
   const sharedUsers = useMemo(() => file?.sharedWith || [], [file]);
   const linkUrl = useMemo(() => {
@@ -31,34 +44,34 @@ export const ShareModal = ({ open, onClose, file, onSubmit, onRemove, onUpdateSe
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (!identifier.trim()) return;
     setLoading(true);
-    const success = await onSubmit({ identifier, role });
+    const success = await onSubmit({ identifier: identifier.trim(), role });
     setLoading(false);
     if (success) setIdentifier("");
   };
 
   const handleSettingsUpdate = async () => {
-    await onUpdateSettings({ visibility, linkEnabled, linkRole });
+    await onUpdateSettings({ visibility, linkEnabled, linkRole: "viewer" });
   };
 
   const handleCopy = async () => {
     if (!linkUrl) return;
-    await navigator.clipboard.writeText(linkUrl);
+    try {
+      await navigator.clipboard.writeText(linkUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      setCopied(false);
+    }
   };
 
   return (
-    <Modal open={open} onClose={onClose} title={`Share ${file?.filename || "file"}`} description="Invite teammates or configure link/public access.">
+    <Modal open={open} onClose={onClose} title={`Share ${file?.filename || "file"}`} description="Invite teammates directly or configure read-only link/public access.">
       <div className="space-y-6">
         <form className="space-y-4" onSubmit={handleSubmit}>
           <Input label="Username or email" placeholder="alex@team.dev" value={identifier} onChange={(event) => setIdentifier(event.target.value)} />
-          <label className="flex flex-col gap-2 text-sm font-medium text-drive-text">
-            <span>Permission</span>
-            <select className="rounded-2xl border border-[#d7dce5] bg-white px-4 py-3 text-sm outline-none" value={role} onChange={(event) => setRole(event.target.value)}>
-              <option value="viewer">Viewer</option>
-              <option value="commenter">Commenter</option>
-              <option value="editor">Editor</option>
-            </select>
-          </label>
+          <Select label="Permission" value={role} onChange={setRole} options={roleOptions} />
           <div className="flex justify-end gap-3">
             <Button type="button" variant="ghost" onClick={onClose}>Close</Button>
             <Button type="submit" loading={loading}>Share</Button>
@@ -66,33 +79,22 @@ export const ShareModal = ({ open, onClose, file, onSubmit, onRemove, onUpdateSe
         </form>
 
         <div className="space-y-4 rounded-3xl border border-[#edf1f6] bg-[#fafcff] p-4">
-          <p className="text-sm font-semibold text-drive-text">Access controls</p>
-          <label className="flex flex-col gap-2 text-sm font-medium text-drive-text">
-            <span>Visibility</span>
-            <select className="rounded-2xl border border-[#d7dce5] bg-white px-4 py-3 text-sm outline-none" value={visibility} onChange={(event) => setVisibility(event.target.value)}>
-              <option value="private">Private</option>
-              <option value="link">Anyone with link</option>
-              <option value="public">Public view</option>
-            </select>
-          </label>
+          <p className="text-sm font-semibold text-drive-text">Link and visibility</p>
+          <Select label="Visibility" value={visibility} onChange={setVisibility} options={visibilityOptions} />
           <label className="flex items-center justify-between rounded-2xl border border-[#d7dce5] bg-white px-4 py-3 text-sm text-drive-text">
-            <span>Enable link sharing</span>
+            <span>Enable share link</span>
             <input type="checkbox" checked={linkEnabled} onChange={(event) => setLinkEnabled(event.target.checked)} />
           </label>
-          <label className="flex flex-col gap-2 text-sm font-medium text-drive-text">
-            <span>Link role</span>
-            <select className="rounded-2xl border border-[#d7dce5] bg-white px-4 py-3 text-sm outline-none" value={linkRole} onChange={(event) => setLinkRole(event.target.value)} disabled={!linkEnabled}>
-              <option value="viewer">Viewer</option>
-              <option value="commenter">Commenter</option>
-              <option value="editor">Editor</option>
-            </select>
-          </label>
+          <div className="rounded-2xl border border-[#d7dce5] bg-white px-4 py-3 text-sm text-drive-subtext">
+            Link and public access are read-only. Use direct sharing above for commenter or editor access.
+          </div>
           {linkUrl ? (
             <div className="rounded-2xl border border-[#d7dce5] bg-white p-3">
               <p className="text-xs font-medium uppercase tracking-[0.18em] text-drive-subtext">Share link</p>
               <p className="mt-2 break-all text-sm text-drive-text">{linkUrl}</p>
-              <div className="mt-3 flex justify-end">
-                <Button variant="surface" onClick={handleCopy}>Copy link</Button>
+              <div className="mt-3 flex items-center justify-between gap-3">
+                <span className="text-xs text-drive-subtext">{copied ? "Copied to clipboard" : "Anyone with this link can open the file in view mode."}</span>
+                <Button variant="surface" onClick={handleCopy}>{copied ? "Copied" : "Copy link"}</Button>
               </div>
             </div>
           ) : null}

@@ -1,13 +1,22 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   ArrowLeftIcon,
+  ArrowPathIcon,
+  ArrowUturnLeftIcon,
+  ArrowUturnRightIcon,
   Bars3BottomLeftIcon,
+  Bars3CenterLeftIcon,
+  Bars3Icon,
+  ChatBubbleLeftEllipsisIcon,
   CloudArrowUpIcon,
   DocumentTextIcon,
   EllipsisVerticalIcon,
+  ListBulletIcon,
   LockClosedIcon,
   LockOpenIcon,
+  MagnifyingGlassPlusIcon,
+  MagnifyingGlassMinusIcon,
   UserGroupIcon
 } from "@heroicons/react/24/outline";
 import { io } from "socket.io-client";
@@ -23,53 +32,134 @@ import { Button } from "../components/ui/Button";
 import { Spinner } from "../components/ui/Spinner";
 import { PresenceBar } from "../components/editor/PresenceBar";
 import { Modal } from "../components/ui/Modal";
+import { Select } from "../components/ui/Select";
 import { ShareModal } from "../components/modals/ShareModal";
+import { DocsMenuBar } from "../components/editor/DocsMenuBar";
+import { CommentPanel } from "../components/editor/CommentPanel";
+import { CursorOverlay } from "../components/editor/CursorOverlay";
+import { SlashMenu } from "../components/editor/SlashMenu";
+import { FontSize } from "../components/editor/extensions/FontSize";
 import { useToast } from "../context/ToastContext";
 import { useAuth } from "../context/AuthContext";
 
-const ToolbarButton = ({ active = false, disabled = false, onClick, children }) => (
-  <button className={`grid h-9 min-w-9 place-items-center rounded-xl px-2 text-sm transition ${active ? "bg-[#dbe7ff] text-[#174ea6]" : "text-drive-text hover:bg-[#eef3fb]"} disabled:cursor-not-allowed disabled:opacity-45`} onMouseDown={(event) => event.preventDefault()} onClick={onClick} disabled={disabled}>
+const ToolbarButton = ({ active = false, disabled = false, compact = false, title, onClick, children }) => (
+  <button
+    type="button"
+    title={title}
+    className={`grid place-items-center rounded-lg border text-[14px] font-medium transition ${compact ? "h-9 min-w-9 px-2" : "h-9 min-w-[40px] px-2.5"} ${active ? "border-[#d2e3fc] bg-[#e8f0fe] text-[#174ea6]" : "border-transparent text-[#3c4043] hover:border-[#dadce0] hover:bg-[#f1f3f4]"} disabled:cursor-not-allowed disabled:opacity-45`}
+    onMouseDown={(event) => event.preventDefault()}
+    onClick={onClick}
+    disabled={disabled}
+  >
     {children}
   </button>
 );
 
-const EditorToolbar = ({ editor, disabled, onOpenVersions, onManageAccess, canManageAccess }) => {
-  if (!editor) return null;
+const Divider = () => <div className="h-6 w-px bg-[#dadce0]" />;
+
+const ColorControl = ({ label, value, disabled, onPick }) => {
+  const inputRef = useRef(null);
 
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-[22px] border border-[#dde3ee] bg-white px-4 py-3 shadow-soft">
-      <ToolbarButton disabled={disabled} active={editor.isActive("bold")} onClick={() => editor.chain().focus().toggleBold().run()}>B</ToolbarButton>
-      <ToolbarButton disabled={disabled} active={editor.isActive("italic")} onClick={() => editor.chain().focus().toggleItalic().run()}>I</ToolbarButton>
-      <ToolbarButton disabled={disabled} active={editor.isActive("underline")} onClick={() => editor.chain().focus().toggleUnderline().run()}>U</ToolbarButton>
-      <ToolbarButton disabled={disabled} active={editor.isActive("bulletList")} onClick={() => editor.chain().focus().toggleBulletList().run()}>•</ToolbarButton>
-      <ToolbarButton disabled={disabled} active={editor.isActive("orderedList")} onClick={() => editor.chain().focus().toggleOrderedList().run()}>1.</ToolbarButton>
-      <ToolbarButton disabled={disabled} active={editor.isActive({ textAlign: "left" })} onClick={() => editor.chain().focus().setTextAlign("left").run()}>L</ToolbarButton>
-      <ToolbarButton disabled={disabled} active={editor.isActive({ textAlign: "center" })} onClick={() => editor.chain().focus().setTextAlign("center").run()}>C</ToolbarButton>
-      <ToolbarButton disabled={disabled} active={editor.isActive({ textAlign: "right" })} onClick={() => editor.chain().focus().setTextAlign("right").run()}>R</ToolbarButton>
-      <select className="rounded-xl border border-[#d7dce5] px-3 py-2 text-sm outline-none" defaultValue="paragraph" onChange={(event) => {
-        const value = event.target.value;
-        const chain = editor.chain().focus();
-        if (value === "paragraph") chain.setParagraph().run();
-        if (value === "h1") chain.toggleHeading({ level: 1 }).run();
-        if (value === "h2") chain.toggleHeading({ level: 2 }).run();
-        if (value === "blockquote") chain.toggleBlockquote().run();
-      }} disabled={disabled}>
-        <option value="paragraph">Normal text</option>
-        <option value="h1">Heading 1</option>
-        <option value="h2">Heading 2</option>
-        <option value="blockquote">Quote</option>
-      </select>
-      <label className="flex items-center gap-2 rounded-xl border border-[#d7dce5] px-3 py-2 text-sm text-drive-subtext">
-        Text
-        <input type="color" onChange={(event) => editor.chain().focus().setColor(event.target.value).run()} disabled={disabled} />
-      </label>
-      <label className="flex items-center gap-2 rounded-xl border border-[#d7dce5] px-3 py-2 text-sm text-drive-subtext">
-        Highlight
-        <input type="color" onChange={(event) => editor.chain().focus().toggleHighlight({ color: event.target.value }).run()} disabled={disabled} />
-      </label>
-      <div className="ml-auto flex items-center gap-2">
-        <Button variant="surface" onClick={onOpenVersions}>History</Button>
-        {canManageAccess ? <Button variant="surface" onClick={onManageAccess}>Manage access</Button> : null}
+    <button
+      type="button"
+      className="flex h-9 items-center gap-2 rounded-lg border border-transparent px-2.5 text-[14px] text-[#3c4043] transition hover:border-[#dadce0] hover:bg-[#f1f3f4] disabled:cursor-not-allowed disabled:opacity-45"
+      onMouseDown={(event) => event.preventDefault()}
+      onClick={() => inputRef.current?.click()}
+      disabled={disabled}
+    >
+      <span>{label}</span>
+      <span className="h-4 w-4 rounded-sm border border-[#c7cdd4]" style={{ backgroundColor: value }} />
+      <input ref={inputRef} type="color" className="hidden" value={value} onChange={(event) => onPick(event.target.value)} disabled={disabled} />
+    </button>
+  );
+};
+
+const EditorToolbar = ({ editor, disabled, zoom, setZoom, onOpenVersions, onManageAccess, onToggleComments, canManageAccess, showComments }) => {
+  if (!editor) return null;
+
+  const currentColor = editor.getAttributes("textStyle")?.color || "#202124";
+  const currentHighlight = editor.getAttributes("highlight")?.color || "#fbbc04";
+  const currentFontSize = editor.getAttributes("textStyle")?.fontSize || "16px";
+
+  return (
+    <div className="rounded-[20px] border border-[#e0e3e7] bg-white px-3 py-2 shadow-[0_1px_2px_rgba(60,64,67,0.12)]">
+      <div className="flex flex-wrap items-center gap-1.5">
+        <div className="flex items-center gap-1 rounded-xl px-1 py-1">
+          <ToolbarButton compact title="Undo" disabled={disabled || !editor.can().undo()} onClick={() => editor.chain().focus().undo().run()}>
+            <ArrowUturnLeftIcon className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton compact title="Redo" disabled={disabled || !editor.can().redo()} onClick={() => editor.chain().focus().redo().run()}>
+            <ArrowUturnRightIcon className="h-4 w-4" />
+          </ToolbarButton>
+        </div>
+
+        <Divider />
+
+        <Select
+          value={editor.isActive("heading", { level: 1 }) ? "h1" : editor.isActive("heading", { level: 2 }) ? "h2" : editor.isActive("blockquote") ? "blockquote" : "paragraph"}
+          onChange={(value) => {
+            const chain = editor.chain().focus();
+            if (value === "paragraph") chain.setParagraph().run();
+            if (value === "h1") chain.setHeading({ level: 1 }).run();
+            if (value === "h2") chain.setHeading({ level: 2 }).run();
+            if (value === "blockquote") chain.toggleBlockquote().run();
+          }}
+          options={[
+            { value: "paragraph", label: "Normal text" },
+            { value: "h1", label: "Heading 1" },
+            { value: "h2", label: "Heading 2" },
+            { value: "blockquote", label: "Quote" }
+          ]}
+          disabled={disabled}
+          className="min-w-[170px]"
+          buttonClassName="h-9 rounded-lg border border-transparent px-3 py-2 text-[14px] text-[#202124] hover:border-[#dadce0] hover:bg-[#f1f3f4]"
+          menuClassName="min-w-[220px]"
+        />
+
+        <Select
+          value={currentFontSize}
+          onChange={(value) => editor.chain().focus().setFontSize(value).run()}
+          options={["12px", "14px", "16px", "18px", "24px"].map((value) => ({ value, label: value.replace("px", "") }))}
+          disabled={disabled}
+          className="min-w-[86px]"
+          buttonClassName="h-9 rounded-lg border border-transparent px-3 py-2 text-[14px] text-[#202124] hover:border-[#dadce0] hover:bg-[#f1f3f4]"
+          menuClassName="min-w-[110px]"
+        />
+
+        <Divider />
+
+        <div className="flex items-center gap-1 rounded-xl px-1 py-1">
+          <ToolbarButton title="Bold" active={editor.isActive("bold")} disabled={disabled} onClick={() => editor.chain().focus().toggleBold().run()}><span className="text-[15px] font-bold">B</span></ToolbarButton>
+          <ToolbarButton title="Italic" active={editor.isActive("italic")} disabled={disabled} onClick={() => editor.chain().focus().toggleItalic().run()}><span className="text-[15px] italic">I</span></ToolbarButton>
+          <ToolbarButton title="Underline" active={editor.isActive("underline")} disabled={disabled} onClick={() => editor.chain().focus().toggleUnderline().run()}><span className="text-[15px] underline underline-offset-2">U</span></ToolbarButton>
+          <ToolbarButton title="Bullet list" active={editor.isActive("bulletList")} disabled={disabled} onClick={() => editor.chain().focus().toggleBulletList().run()}><ListBulletIcon className="h-4 w-4" /></ToolbarButton>
+          <ToolbarButton title="Numbered list" active={editor.isActive("orderedList")} disabled={disabled} onClick={() => editor.chain().focus().toggleOrderedList().run()}><span className="text-[14px] font-medium">1.</span></ToolbarButton>
+        </div>
+
+        <Divider />
+
+        <div className="flex items-center gap-1 rounded-xl px-1 py-1">
+          <ToolbarButton compact title="Align left" active={editor.isActive({ textAlign: "left" })} disabled={disabled} onClick={() => editor.chain().focus().setTextAlign("left").run()}><Bars3BottomLeftIcon className="h-4 w-4" /></ToolbarButton>
+          <ToolbarButton compact title="Align center" active={editor.isActive({ textAlign: "center" })} disabled={disabled} onClick={() => editor.chain().focus().setTextAlign("center").run()}><Bars3CenterLeftIcon className="h-4 w-4" /></ToolbarButton>
+          <ToolbarButton compact title="Align right" active={editor.isActive({ textAlign: "right" })} disabled={disabled} onClick={() => editor.chain().focus().setTextAlign("right").run()}><Bars3Icon className="h-4 w-4" /></ToolbarButton>
+        </div>
+
+        <Divider />
+
+        <div className="flex items-center gap-1 rounded-xl px-1 py-1">
+          <ColorControl label="Text" value={currentColor} disabled={disabled} onPick={(value) => editor.chain().focus().setColor(value).run()} />
+          <ColorControl label="Highlight" value={currentHighlight} disabled={disabled} onPick={(value) => editor.chain().focus().toggleHighlight({ color: value }).run()} />
+        </div>
+
+        <div className="ml-auto flex items-center gap-2 pl-2">
+          <button type="button" className="inline-flex items-center gap-2 rounded-full border border-[#dadce0] px-3 py-2 text-sm text-[#3c4043] transition hover:bg-[#f8f9fa]" onMouseDown={(event) => event.preventDefault()} onClick={() => setZoom((current) => Math.max(80, current - 10))}><MagnifyingGlassMinusIcon className="h-4 w-4" /></button>
+          <span className="rounded-full bg-[#f1f3f4] px-3 py-2 text-sm font-medium text-[#3c4043]">{zoom}%</span>
+          <button type="button" className="inline-flex items-center gap-2 rounded-full border border-[#dadce0] px-3 py-2 text-sm text-[#3c4043] transition hover:bg-[#f8f9fa]" onMouseDown={(event) => event.preventDefault()} onClick={() => setZoom((current) => Math.min(150, current + 10))}><MagnifyingGlassPlusIcon className="h-4 w-4" /></button>
+          <Button variant="surface" onClick={onOpenVersions}>History</Button>
+          <Button variant="surface" onClick={onToggleComments}>{showComments ? "Hide comments" : "Comments"}</Button>
+          {canManageAccess ? <Button variant="surface" onClick={onManageAccess}>Manage access</Button> : null}
+        </div>
       </div>
     </div>
   );
@@ -83,8 +173,15 @@ export const EditorPage = () => {
   const toast = useToast();
   const linkToken = searchParams.get("linkToken");
   const authToken = localStorage.getItem("collabdrive-token");
+  const socketRef = useRef(null);
+  const roleRef = useRef("viewer");
+  const localSocketIdRef = useRef(null);
+  const sendChangesTimeoutRef = useRef(null);
+  const pageRef = useRef(null);
   const [file, setFile] = useState(null);
   const [presence, setPresence] = useState([]);
+  const [comments, setComments] = useState([]);
+  const [cursorOverlays, setCursorOverlays] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [role, setRole] = useState("viewer");
@@ -92,39 +189,89 @@ export const EditorPage = () => {
   const [showVersions, setShowVersions] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
-  const [socketInstance, setSocketInstance] = useState(null);
+  const [showComments, setShowComments] = useState(false);
+  const [isEditorEmpty, setIsEditorEmpty] = useState(true);
+  const [lastSavedAt, setLastSavedAt] = useState(null);
+  const [zoom, setZoom] = useState(100);
+  const [slashState, setSlashState] = useState({ open: false, query: "" });
+  const [selectedText, setSelectedText] = useState("");
 
   const editor = useEditor({
     extensions: [
       StarterKit,
       Underline,
       TextStyle,
+      FontSize,
       Color,
       Highlight.configure({ multicolor: true }),
       TextAlign.configure({ types: ["heading", "paragraph"] })
     ],
-    editable: role !== "viewer" && role !== "commenter",
-    content: "<p><br></p>",
+    editable: false,
+    autofocus: false,
+    content: "<p></p>",
+    editorProps: {
+      attributes: {
+        class: "collab-editor-surface",
+        spellcheck: "false",
+        autocorrect: "off",
+        autocapitalize: "off",
+        autocomplete: "off"
+      }
+    },
+
+    onCreate: ({ editor: current }) => {
+      setIsEditorEmpty(current.isEmpty);
+    },
+    onSelectionUpdate: ({ editor: current }) => {
+      const { from, to } = current.state.selection;
+      const text = current.state.doc.textBetween(from, to, " ").trim();
+      setSelectedText(text);
+      socketRef.current?.emit("cursor-move", { documentId: id, cursor: { from, to } });
+
+      const paragraphText = current.state.selection.$from.parent.textContent || "";
+      if (paragraphText.startsWith("/")) {
+        setSlashState({ open: true, query: paragraphText.slice(1) });
+      } else {
+        setSlashState({ open: false, query: "" });
+      }
+    },
     onUpdate: ({ editor: current }) => {
-      if (!socketInstance || !["owner", "editor"].includes(role)) return;
-      socketInstance.emit("send-changes", { documentId: id, content: current.getHTML(), cursor: null });
+      setIsEditorEmpty(current.isEmpty);
+      const socket = socketRef.current;
+      if (!socket || !["owner", "editor"].includes(roleRef.current)) return;
+      clearTimeout(sendChangesTimeoutRef.current);
+      const content = current.getHTML();
+      const { from, to } = current.state.selection;
+      sendChangesTimeoutRef.current = setTimeout(() => {
+        socket.emit("send-changes", { documentId: id, content, cursor: { from, to } });
+      }, 120);
     }
-  }, [role, socketInstance, id]);
+  });
 
   useEffect(() => {
-    if (!editor) return;
-    editor.setEditable(role !== "viewer" && role !== "commenter");
+    roleRef.current = role;
+    editor?.setEditable(["owner", "editor"].includes(role));
+    if (role === "commenter") setShowComments(true);
   }, [role, editor]);
 
   useEffect(() => {
+    if (!editor) return;
+
     const loadDocument = async () => {
+      setLoading(true);
       try {
         const params = linkToken ? { linkToken } : undefined;
         const { data } = await filesApi.getDocument(id, params);
         setFile(data.file);
         setRole(data.file.accessRole || "viewer");
         setVersions(data.versions || []);
-        editor?.commands.setContent(data.content || "<p><br></p>", false);
+        setComments(data.comments || []);
+        setLastSavedAt(data.file.updatedAt || null);
+        editor.commands.setContent(data.content || "<p></p>", false);
+        setIsEditorEmpty(editor.isEmpty);
+        if (["owner", "editor"].includes(data.file.accessRole)) {
+          window.requestAnimationFrame(() => editor.commands.focus("start"));
+        }
       } catch (error) {
         toast.error(error.response?.data?.message || "Could not open document.");
         navigate(user ? "/" : "/login");
@@ -134,35 +281,42 @@ export const EditorPage = () => {
     };
 
     loadDocument();
-  }, [id, navigate, editor, linkToken, user, toast]);
+  }, [id, editor, linkToken, navigate, toast, user]);
 
   useEffect(() => {
     if (!editor || !authToken) return undefined;
 
     const socket = io(import.meta.env.VITE_SOCKET_URL || "http://localhost:5000", { auth: { token: authToken } });
-    setSocketInstance(socket);
+    socketRef.current = socket;
 
     socket.on("connect", () => {
+      localSocketIdRef.current = socket.id;
       socket.emit("join-document", { documentId: id });
     });
 
     socket.on("document-loaded", (payload) => {
       setRole(payload.role);
-      editor.commands.setContent(payload.content || "<p><br></p>", false);
+      editor.commands.setContent(payload.content || "<p></p>", false);
+      setIsEditorEmpty(editor.isEmpty);
     });
 
-    socket.on("receive-changes", ({ content }) => {
+    socket.on("receive-changes", ({ content, senderId }) => {
+      if (senderId === user?._id) return;
       if (content !== editor.getHTML()) {
-        editor.commands.setContent(content || "<p><br></p>", false);
+        editor.commands.setContent(content || "<p></p>", false);
+        setIsEditorEmpty(editor.isEmpty);
       }
     });
 
     socket.on("presence-update", (nextPresence) => setPresence(nextPresence));
-    socket.on("document-saved", () => setSaving(false));
+    socket.on("document-saved", (payload) => {
+      setSaving(false);
+      setLastSavedAt(payload.updatedAt);
+    });
     socket.on("editor-error", (payload) => toast.error(payload.message || "Editor error."));
 
     const intervalId = setInterval(() => {
-      if (["owner", "editor"].includes(role)) {
+      if (["owner", "editor"].includes(roleRef.current)) {
         socket.emit("save-document", { documentId: id, content: editor.getHTML() });
         setSaving(true);
       }
@@ -170,13 +324,41 @@ export const EditorPage = () => {
 
     return () => {
       clearInterval(intervalId);
-      if (["owner", "editor"].includes(role)) {
+      clearTimeout(sendChangesTimeoutRef.current);
+      if (["owner", "editor"].includes(roleRef.current)) {
         socket.emit("save-document", { documentId: id, content: editor.getHTML() });
       }
       socket.disconnect();
-      setSocketInstance(null);
+      socketRef.current = null;
     };
-  }, [id, editor, role, authToken, toast]);
+  }, [id, editor, authToken, toast, user?._id]);
+
+  useEffect(() => {
+    if (!editor || !pageRef.current) return;
+
+    const nextCursors = (presence || [])
+      .filter((entry) => entry.socketId !== localSocketIdRef.current)
+      .filter((entry) => entry.cursor?.from && entry.user)
+      .map((entry) => {
+        try {
+          const position = Math.min(entry.cursor.from, editor.state.doc.content.size);
+          const coords = editor.view.coordsAtPos(position);
+          const pageRect = pageRef.current.getBoundingClientRect();
+          return {
+            key: entry.socketId,
+            left: coords.left - pageRect.left,
+            top: coords.top - pageRect.top,
+            label: entry.user.name || entry.user.username,
+            color: entry.user.avatarColor || "#1a73e8"
+          };
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean);
+
+    setCursorOverlays(nextCursors);
+  }, [presence, editor, file?.updatedAt, zoom]);
 
   const saveNow = async () => {
     if (!editor || !["owner", "editor"].includes(role)) return;
@@ -184,8 +366,8 @@ export const EditorPage = () => {
     try {
       const content = editor.getHTML();
       await filesApi.saveDocument(id, { content });
-      socketInstance?.emit("save-document", { documentId: id, content });
-      toast.success("Document saved.");
+      socketRef.current?.emit("save-document", { documentId: id, content });
+      toast.success("Document saved to the cloud.");
     } catch (error) {
       toast.error(error.response?.data?.message || "Save failed.");
     } finally {
@@ -239,71 +421,164 @@ export const EditorPage = () => {
     }
   };
 
-  const presenceLabel = useMemo(() => {
-    if (!authToken) return "shared link access";
-    return "live collaboration";
-  }, [authToken]);
+  const handleAddComment = async ({ message, anchorText }) => {
+    try {
+      const { data } = await filesApi.addComment(id, { message, anchorText });
+      setComments(data.comments || []);
+      toast.success("Comment added.");
+      return true;
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Could not add the comment.");
+      return false;
+    }
+  };
 
-  if (loading || !editor) {
-    return <div className="flex min-h-screen items-center justify-center bg-drive-bg"><Spinner label="Loading collaborative editor" /></div>;
-  }
+  const handleResolveComment = async (commentId, resolved) => {
+    try {
+      const { data } = await filesApi.resolveComment(id, commentId, { resolved });
+      setComments(data.comments || []);
+      toast.success(resolved ? "Comment resolved." : "Comment reopened.");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Could not update the comment.");
+    }
+  };
+
+  const handleRestoreVersion = async (versionId) => {
+    try {
+      const { data } = await filesApi.restoreVersion(id, versionId);
+      editor?.commands.setContent(data.content || "<p></p>", false);
+      setLastSavedAt(data.updatedAt);
+      setShowVersions(false);
+      toast.success("Version restored.");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Could not restore this version.");
+    }
+  };
+
+  const runSlashCommand = (command) => {
+    if (!editor) return;
+    const { $from } = editor.state.selection;
+    const start = $from.start();
+    const end = $from.end();
+    editor.chain().focus().deleteRange({ from: start, to: end }).run();
+    if (command === "heading") editor.chain().focus().setHeading({ level: 1 }).run();
+    if (command === "bulletList") editor.chain().focus().toggleBulletList().run();
+    if (command === "quote") editor.chain().focus().toggleBlockquote().run();
+    setSlashState({ open: false, query: "" });
+  };
+
+  const handleMenuAction = (action) => {
+    if (!editor) return;
+    if (action === "save") return saveNow();
+    if (action === "history") return setShowVersions(true);
+    if (action === "undo") return editor.chain().focus().undo().run();
+    if (action === "redo") return editor.chain().focus().redo().run();
+    if (action === "zoomIn") return setZoom((current) => Math.min(150, current + 10));
+    if (action === "zoomOut") return setZoom((current) => Math.max(80, current - 10));
+    if (action === "resetZoom") return setZoom(100);
+    if (action === "comments") return setShowComments((current) => !current);
+    if (action === "heading") return editor.chain().focus().setHeading({ level: 1 }).run();
+    if (action === "bulletList") return editor.chain().focus().toggleBulletList().run();
+    if (action === "quote") return editor.chain().focus().toggleBlockquote().run();
+    if (action === "bold") return editor.chain().focus().toggleBold().run();
+    if (action === "italic") return editor.chain().focus().toggleItalic().run();
+    if (action === "underline") return editor.chain().focus().toggleUnderline().run();
+    if (action === "clearMarks") return editor.chain().focus().unsetAllMarks().run();
+  };
 
   const canEdit = ["owner", "editor"].includes(role);
+  const canComment = ["owner", "editor", "commenter"].includes(role);
   const canManageAccess = role === "owner";
+  const presenceLabel = useMemo(() => (authToken ? "live collaboration" : "shared link access"), [authToken]);
+  const statusLabel = saving ? "Saving..." : lastSavedAt ? `Saved ${new Date(lastSavedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}` : "Saved to cloud";
+  const latestEditor = versions[0]?.editedBy?.name || file?.lastEditedBy?.name || file?.owner?.name || "Unknown";
+
+  if (loading || !editor) {
+    return <div className="flex min-h-screen items-center justify-center bg-[#f1f3f4]"><Spinner label="Loading document" /></div>;
+  }
 
   return (
-    <div className="min-h-screen bg-drive-bg px-4 py-4 lg:px-6">
-      <div className="mx-auto max-w-[1680px] space-y-5">
-        <header className="flex flex-col gap-4 rounded-[28px] bg-white/80 px-5 py-4 shadow-shell backdrop-blur-xl lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-center gap-4">
-            <button className="grid h-11 w-11 place-items-center rounded-full text-drive-subtext transition hover:bg-slate-100" onClick={() => navigate(user ? "/" : "/login")}><ArrowLeftIcon className="h-5 w-5" /></button>
-            <div className="grid h-11 w-11 place-items-center rounded-2xl bg-[#e8f0fe] text-drive-blue"><DocumentTextIcon className="h-6 w-6" /></div>
-            <div>
-              <h1 className="text-2xl font-medium tracking-tight text-drive-text">{file?.filename}</h1>
-              <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-drive-subtext">
-                <span className="inline-flex items-center gap-1.5">{canEdit ? <LockOpenIcon className="h-4 w-4" /> : <LockClosedIcon className="h-4 w-4" />} {role}</span>
-                <span className="inline-flex items-center gap-1.5"><UserGroupIcon className="h-4 w-4" /> {presenceLabel}</span>
+    <div className="min-h-screen bg-[#f1f3f4] px-4 py-4 lg:px-6">
+      <div className="mx-auto max-w-[1720px] space-y-4">
+        <header className="rounded-[24px] border border-[#e0e3e7] bg-white px-5 py-4 shadow-[0_1px_3px_rgba(60,64,67,0.15)]">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center gap-4">
+              <button className="grid h-11 w-11 place-items-center rounded-full text-[#5f6368] transition hover:bg-[#f1f3f4]" onClick={() => navigate(user ? "/" : "/login")}>
+                <ArrowLeftIcon className="h-5 w-5" />
+              </button>
+              <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#e8f0fe] text-[#1a73e8]">
+                <DocumentTextIcon className="h-7 w-7" />
+              </div>
+              <div>
+                <h1 className="text-[20px] font-medium tracking-tight text-[#202124]">{file?.filename}</h1>
+                <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-[#5f6368]">
+                  <span className="inline-flex items-center gap-1.5">{canEdit ? <LockOpenIcon className="h-4 w-4" /> : <LockClosedIcon className="h-4 w-4" />} {role}</span>
+                  <span className="inline-flex items-center gap-1.5"><UserGroupIcon className="h-4 w-4" /> {presenceLabel}</span>
+                  <span className="inline-flex items-center gap-1.5"><ChatBubbleLeftEllipsisIcon className="h-4 w-4" /> Last edited by {latestEditor}</span>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-            {authToken ? <PresenceBar presence={presence} /> : null}
-            <Button onClick={saveNow} loading={saving} className="gap-2" disabled={!canEdit}><CloudArrowUpIcon className="h-4 w-4" /> Save</Button>
-            <div className="relative">
-              <button className="grid h-10 w-10 place-items-center rounded-full border border-[#d7dce5] bg-white text-drive-subtext transition hover:bg-slate-50" onClick={() => setShowMenu((current) => !current)}><EllipsisVerticalIcon className="h-5 w-5" /></button>
-              {showMenu ? (
-                <div className="absolute right-0 top-[calc(100%+8px)] z-20 min-w-[220px] rounded-2xl border border-[#e1e8f2] bg-white p-2 shadow-card">
-                  <button className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-drive-text hover:bg-slate-50" onClick={() => { setShowMenu(false); setShowVersions(true); }}><Bars3BottomLeftIcon className="h-4 w-4" /> Version history</button>
-                  {canManageAccess ? <button className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-drive-text hover:bg-slate-50" onClick={() => { setShowMenu(false); setShowShare(true); }}><UserGroupIcon className="h-4 w-4" /> Manage access</button> : null}
-                </div>
-              ) : null}
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+              {authToken ? <PresenceBar presence={presence} /> : null}
+              <span className="inline-flex items-center rounded-full border border-[#d7dce1] bg-[#f8f9fa] px-4 py-2 text-sm text-[#3c4043]">{statusLabel}</span>
+              <Button onClick={saveNow} loading={saving} className="gap-2 bg-[#1a73e8] hover:bg-[#185abc]" disabled={!canEdit}><CloudArrowUpIcon className="h-4 w-4" /> Save</Button>
+              <div className="relative">
+                <button className="grid h-10 w-10 place-items-center rounded-full border border-[#dadce0] bg-white text-[#5f6368] transition hover:bg-[#f8f9fa]" onClick={() => setShowMenu((current) => !current)}>
+                  <EllipsisVerticalIcon className="h-5 w-5" />
+                </button>
+                {showMenu ? (
+                  <div className="absolute right-0 top-[calc(100%+8px)] z-20 min-w-[220px] rounded-2xl border border-[#e0e3e7] bg-white p-2 shadow-[0_4px_12px_rgba(60,64,67,0.18)]">
+                    <button className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-[#202124] hover:bg-[#f1f3f4]" onClick={() => { setShowMenu(false); setShowVersions(true); }}><ArrowPathIcon className="h-4 w-4" /> Version history</button>
+                    <button className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-[#202124] hover:bg-[#f1f3f4]" onClick={() => { setShowMenu(false); setShowComments((current) => !current); }}><ChatBubbleLeftEllipsisIcon className="h-4 w-4" /> Comments</button>
+                    {canManageAccess ? <button className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-[#202124] hover:bg-[#f1f3f4]" onClick={() => { setShowMenu(false); setShowShare(true); }}><UserGroupIcon className="h-4 w-4" /> Manage access</button> : null}
+                  </div>
+                ) : null}
+              </div>
             </div>
           </div>
         </header>
 
-        <EditorToolbar editor={editor} disabled={!canEdit} onOpenVersions={() => setShowVersions(true)} onManageAccess={() => setShowShare(true)} canManageAccess={canManageAccess} />
+        <DocsMenuBar onAction={handleMenuAction} />
+        <EditorToolbar editor={editor} disabled={!canEdit} zoom={zoom} setZoom={setZoom} onOpenVersions={() => setShowVersions(true)} onManageAccess={() => setShowShare(true)} onToggleComments={() => setShowComments((current) => !current)} canManageAccess={canManageAccess} showComments={showComments} />
 
-        <section className="rounded-[28px] bg-[#eef3fb] p-4 shadow-shell">
-          <div className="rounded-[22px] border border-[#dde3ee] bg-white px-5 py-4 text-sm text-drive-subtext shadow-soft">
-            {canEdit ? "Tiptap rich-text editing is enabled with stronger formatting reliability and structured content support." : role === "commenter" ? "You have commenter access. Review content, but editing is locked." : "You have view-only access. Editing tools are disabled until the owner grants edit permission."}
-          </div>
-          <div className="mt-4 overflow-auto rounded-[24px] bg-[#eef3fb] p-3">
-            <div className="doc-page-shadow mx-auto min-h-[72vh] max-w-[900px] rounded-[18px] bg-white px-8 py-8">
-              <EditorContent editor={editor} className="prose prose-slate max-w-none min-h-[64vh]" />
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+          <section className="relative rounded-[24px] border border-[#e0e3e7] bg-[#eef2f7] px-4 py-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] lg:px-8">
+            <div className="mx-auto max-w-[960px]">
+              <div className="mb-3 overflow-hidden rounded-t-[14px] border border-[#d7dce1] border-b-0 bg-[#f8f9fa] shadow-[0_1px_1px_rgba(60,64,67,0.08)]">
+                <div className="grid grid-cols-8 gap-0 border-b border-[#e1e6ed] px-6 py-2 text-[11px] uppercase tracking-[0.16em] text-[#7a828d]">
+                  {Array.from({ length: 8 }).map((_, index) => <span key={index}>{(index + 1) * 10}</span>)}
+                </div>
+                <div className="px-6 py-2 text-xs text-[#5f6368]">Type <span className="font-medium text-[#202124]">/</span> for quick insert commands. Rich comments are available in the side panel for commenters and editors.</div>
+              </div>
+              <div ref={pageRef} className="docs-page relative mx-auto min-h-[78vh] rounded-b-[4px] bg-white px-[72px] py-[64px]" style={{ zoom: `${zoom}%` }}>
+                <CursorOverlay cursors={cursorOverlays} />
+                {slashState.open ? <SlashMenu open={slashState.open} query={slashState.query} onSelect={runSlashCommand} /> : null}
+                {isEditorEmpty ? <div className="docs-placeholder">Start typing your document...</div> : null}
+                <div className="collab-editor" onClick={() => (canEdit || canComment) && editor.commands.focus()}>
+                  <EditorContent editor={editor} />
+                </div>
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+
+          <CommentPanel open={showComments} comments={comments} canComment={canComment} selectedText={selectedText} onAddComment={handleAddComment} onResolveComment={handleResolveComment} />
+        </div>
       </div>
 
-      <Modal open={showVersions} onClose={() => setShowVersions(false)} title="Version history" description="Recent document saves are available here, but kept out of the main editing surface.">
+      <Modal open={showVersions} onClose={() => setShowVersions(false)} title="Version history" description="Recent saves are available here without cluttering the main editing surface.">
         <div className="space-y-3">
           {versions.length ? versions.map((version) => (
             <div key={version._id} className="rounded-2xl border border-[#e7ecf4] bg-[#fafcff] px-4 py-3">
-              <p className="text-sm font-medium text-drive-text">{version.editedBy?.name || "Unknown user"}</p>
-              <p className="mt-1 text-xs text-drive-subtext">{new Date(version.createdAt).toLocaleString()}</p>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-[#202124]">{version.editedBy?.name || "Unknown user"}</p>
+                  <p className="mt-1 text-xs text-[#5f6368]">{new Date(version.createdAt).toLocaleString()}</p>
+                </div>
+                {canEdit ? <Button variant="surface" onClick={() => handleRestoreVersion(version._id)}>Restore</Button> : null}
+              </div>
             </div>
-          )) : <p className="text-sm text-drive-subtext">No saved versions yet.</p>}
+          )) : <p className="text-sm text-[#5f6368]">No saved versions yet.</p>}
         </div>
       </Modal>
 

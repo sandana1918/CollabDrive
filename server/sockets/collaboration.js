@@ -24,19 +24,22 @@ const getPresencePayload = async (documentId) => {
   });
 };
 
+const updateParticipantCursor = (documentId, socketId, cursor) => {
+  const roomState = documentPresence.get(documentId) || [];
+  const participant = roomState.find((entry) => entry.socketId === socketId);
+  if (participant) participant.cursor = cursor || null;
+  documentPresence.set(documentId, roomState);
+};
+
 export const registerCollaborationHandlers = (io) => {
   io.use(async (socket, next) => {
     try {
       const token = socket.handshake.auth?.token;
-      if (!token) {
-        return next(new Error("Authentication required."));
-      }
+      if (!token) return next(new Error("Authentication required."));
 
       const decoded = verifyToken(token);
       const user = await User.findById(decoded.userId).select("name username email avatarColor");
-      if (!user) {
-        return next(new Error("User not found."));
-      }
+      if (!user) return next(new Error("User not found."));
 
       socket.user = user;
       next();
@@ -72,20 +75,26 @@ export const registerCollaborationHandlers = (io) => {
       documentPresence.set(documentId, roomState);
 
       const content = unsavedDocumentState.get(documentId) ?? file.content;
-      socket.emit("document-loaded", { content, role, documentFormat: file.documentFormat });
+      socket.emit("document-loaded", { content, role, documentFormat: file.documentFormat, userId: socket.user._id.toString() });
       io.to(documentId).emit("presence-update", await getPresencePayload(documentId));
     });
 
-    socket.on("send-changes", ({ documentId, content, cursor }) => {
+    socket.on("cursor-move", async ({ documentId, cursor }) => {
+      const permission = socketPermissions.get(socket.id);
+      if (!permission || permission.documentId !== documentId) return;
+
+      updateParticipantCursor(documentId, socket.id, cursor);
+      io.to(documentId).emit("presence-update", await getPresencePayload(documentId));
+    });
+
+    socket.on("send-changes", async ({ documentId, content, cursor }) => {
       const permission = socketPermissions.get(socket.id);
       if (!permission || permission.documentId !== documentId || !["owner", "editor"].includes(permission.role)) return;
 
       unsavedDocumentState.set(documentId, content);
-      const roomState = documentPresence.get(documentId) || [];
-      const participant = roomState.find((entry) => entry.socketId === socket.id);
-      if (participant) participant.cursor = cursor || null;
-
-      socket.to(documentId).emit("receive-changes", { content, userId: socket.user._id, cursor: cursor || null });
+      updateParticipantCursor(documentId, socket.id, cursor);
+      socket.to(documentId).emit("receive-changes", { content, senderId: socket.user._id.toString(), cursor: cursor || null });
+      io.to(documentId).emit("presence-update", await getPresencePayload(documentId));
     });
 
     socket.on("save-document", async ({ documentId, content }) => {
@@ -101,7 +110,7 @@ export const registerCollaborationHandlers = (io) => {
 
       await DocumentVersion.create({ file: file._id, content: file.content, editedBy: socket.user._id });
       unsavedDocumentState.delete(documentId);
-      io.to(documentId).emit("document-saved", { updatedAt: file.updatedAt });
+      io.to(documentId).emit("document-saved", { updatedAt: file.updatedAt, userId: socket.user._id.toString() });
 
       await Promise.all(
         file.sharedWith

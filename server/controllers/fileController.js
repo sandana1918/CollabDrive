@@ -17,6 +17,16 @@ import {
 import { notifyUsers } from "../services/notificationService.js";
 
 const stripHtml = (value = "") => value.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+const uniqueIds = (values = []) => [...new Set(values.filter(Boolean).map((value) => normalizeId(value)))];
+const formatComment = (comment) => ({
+  id: comment._id,
+  user: comment.user,
+  message: comment.message,
+  anchorText: comment.anchorText,
+  resolved: comment.resolved,
+  createdAt: comment.createdAt,
+  updatedAt: comment.updatedAt
+});
 
 const resolvePreview = (file) => {
   if (file.category !== "file") return { kind: "none", url: null };
@@ -33,15 +43,28 @@ const populateFile = (query) =>
   query
     .populate("owner", "name email username avatarColor")
     .populate("sharedWith.user", "name email username avatarColor")
-    .populate("activity.actor", "name username")
+    .populate("comments.user", "name email username avatarColor")
+    .populate("activity.actor", "name username avatarColor")
     .populate("parent", "filename parent");
+
+const getLatestActor = (file) => {
+  const latestActivity = (file.activity || []).find((entry) => entry.actor);
+  return latestActivity?.actor || null;
+};
+
+const getAccessSummary = (file) => {
+  if (file.visibility === "public") return "Public";
+  if (file.linkShare?.enabled) return "Link";
+  if ((file.sharedWith || []).length) return `Shared with ${(file.sharedWith || []).length}`;
+  return "Private";
+};
 
 const buildFileResponse = (file, currentUserId, linkToken = null) => {
   const accessRole = getFileAccess(file, currentUserId, linkToken);
   const previewText = file.category === "document"
     ? file.documentFormat === "richtext"
-      ? stripHtml(file.content).slice(0, 220)
-      : file.content.slice(0, 220)
+      ? stripHtml(file.content).slice(0, 260)
+      : (file.content || "").slice(0, 260)
     : "";
 
   return {
@@ -55,7 +78,10 @@ const buildFileResponse = (file, currentUserId, linkToken = null) => {
     owner: file.owner,
     parent: file.parent,
     sharedWith: file.sharedWith,
+    sharedCount: file.sharedWith?.length || 0,
+    collaborators: [file.owner, ...(file.sharedWith || []).map((entry) => entry.user)].filter(Boolean),
     accessRole,
+    accessSummary: getAccessSummary(file),
     visibility: file.visibility,
     linkShare: file.linkShare,
     isStarred: isFavoriteForUser(file, currentUserId, "starredBy"),
@@ -64,22 +90,117 @@ const buildFileResponse = (file, currentUserId, linkToken = null) => {
     createdAt: file.createdAt,
     updatedAt: file.updatedAt,
     lastOpenedAt: file.lastOpenedAt,
+    lastEditedBy: getLatestActor(file),
     contentPreview: previewText,
     preview: file.preview?.url ? file.preview : resolvePreview(file),
+    commentsCount: file.comments?.length || 0,
+    comments: (file.comments || []).map(formatComment),
     activity: file.activity
   };
 };
 
-const sortFilesForUser = (files, userId, section) => files.sort((a, b) => {
+const scoreSearchHit = (file, searchTerm = "") => {
+  if (!searchTerm) return 0;
+  const term = searchTerm.toLowerCase().trim();
+  const filename = (file.filename || "").toLowerCase();
+  const originalName = (file.originalName || "").toLowerCase();
+  const content = stripHtml(file.content || "").toLowerCase();
+
+  let score = 0;
+  if (filename === term) score += 120;
+  if (filename.startsWith(term)) score += 90;
+  if (filename.includes(term)) score += 65;
+  if (originalName.startsWith(term)) score += 40;
+  if (originalName.includes(term)) score += 25;
+  if (content.includes(term)) score += 20;
+  if (file.category === "folder" && filename.includes(term)) score += 10;
+  return score;
+};
+
+const sortFilesForUser = (files, userId, section, searchTerm = "") => files.sort((a, b) => {
   const aPinned = isFavoriteForUser(a, userId, "pinnedBy") ? 1 : 0;
   const bPinned = isFavoriteForUser(b, userId, "pinnedBy") ? 1 : 0;
   if (aPinned !== bPinned) return bPinned - aPinned;
+
+  const aScore = scoreSearchHit(a, searchTerm);
+  const bScore = scoreSearchHit(b, searchTerm);
+  if (aScore !== bScore) return bScore - aScore;
+
   if (section === "recent") return new Date(b.lastOpenedAt || b.updatedAt) - new Date(a.lastOpenedAt || a.updatedAt);
-  if (a.category !== b.category) return a.category.localeCompare(b.category);
+  if (a.category !== b.category) return a.category === "folder" ? -1 : 1;
   return new Date(b.updatedAt) - new Date(a.updatedAt);
 });
 
 const collectTreeIds = async (fileId) => [normalizeId(fileId), ...(await collectDescendantIds(fileId))];
+
+const updateFavoriteState = (file, key, userId, desired = null) => {
+  const normalizedUserId = normalizeId(userId);
+  const current = uniqueIds(file[key] || []);
+  const has = current.includes(normalizedUserId);
+  const nextEnabled = desired === null ? !has : desired;
+  file[key] = nextEnabled
+    ? uniqueIds([...current, normalizedUserId])
+    : current.filter((entry) => entry !== normalizedUserId);
+  return nextEnabled;
+};
+
+const trashTree = async (file, actorId) => {
+  const ids = await collectTreeIds(file._id);
+  await File.updateMany(
+    { _id: { $in: ids } },
+    {
+      $set: {
+        isTrashed: true,
+        trashedAt: new Date(),
+        trashedBy: actorId
+      }
+    }
+  );
+
+  file.isTrashed = true;
+  file.trashedAt = new Date();
+  file.trashedBy = actorId;
+  file.trashedParent = file.parent || null;
+  file.parent = null;
+  appendActivity(file, actorId, file.category === "folder" ? "moved folder tree to trash" : "moved item to trash");
+  await file.save();
+  return ids;
+};
+
+const restoreTree = async (file, actorId) => {
+  const ids = await collectTreeIds(file._id);
+  await File.updateMany(
+    { _id: { $in: ids } },
+    {
+      $set: { isTrashed: false },
+      $unset: { trashedAt: 1, trashedBy: 1 }
+    }
+  );
+
+  file.isTrashed = false;
+  file.parent = file.trashedParent || null;
+  file.trashedParent = null;
+  file.trashedAt = undefined;
+  file.trashedBy = undefined;
+  appendActivity(file, actorId, file.category === "folder" ? "restored folder tree" : "restored item from trash");
+  await file.save();
+  return ids;
+};
+
+const permanentDeleteTree = async (file) => {
+  const ids = await collectTreeIds(file._id);
+  const allFiles = await File.find({ _id: { $in: ids } }).select("storageKey");
+
+  await Promise.all(
+    allFiles
+      .filter((entry) => entry.storageKey)
+      .map((entry) => storageConfig.removeFile(entry.storageKey).catch(() => null))
+  );
+
+  await DocumentVersion.deleteMany({ file: { $in: ids } });
+  await File.deleteMany({ _id: { $in: ids } });
+  return ids;
+};
 
 export const listFiles = asyncHandler(async (req, res) => {
   const {
@@ -123,13 +244,13 @@ export const listFiles = asyncHandler(async (req, res) => {
     filter.$and = [{ $or: [{ filename: searchRegex }, { originalName: searchRegex }, { content: searchRegex }] }];
   }
 
-  let files = await populateFile(File.find(filter).limit(250));
+  let files = await populateFile(File.find(filter).limit(300));
 
   if (starred === "true") {
     files = files.filter((file) => isFavoriteForUser(file, userId, "starredBy"));
   }
 
-  files = sortFilesForUser(files, userId, section);
+  files = sortFilesForUser(files, userId, section, search);
   const breadcrumbs = parentId && parentId !== "root" ? await buildBreadcrumbs(parentId) : [];
 
   res.json({
@@ -263,12 +384,13 @@ export const getDocumentContent = asyncHandler(async (req, res) => {
   }
 
   file.lastOpenedAt = new Date();
+  appendActivity(file, userId || file.owner?._id || file.owner, "opened document");
   await file.save();
 
   const versions = await DocumentVersion.find({ file: file._id })
     .sort({ createdAt: -1 })
     .limit(20)
-    .populate("editedBy", "name username");
+    .populate("editedBy", "name username avatarColor");
   const breadcrumbs = file.parent ? await buildBreadcrumbs(file.parent._id || file.parent) : [];
 
   res.json({
@@ -276,6 +398,7 @@ export const getDocumentContent = asyncHandler(async (req, res) => {
     file: buildFileResponse(file, userId, linkToken),
     content: file.content,
     versions,
+    comments: (file.comments || []).map(formatComment),
     breadcrumbs
   });
 });
@@ -304,6 +427,28 @@ export const updateDocumentContent = asyncHandler(async (req, res) => {
   );
 
   res.json({ success: true, message: "Document saved.", updatedAt: file.updatedAt });
+});
+
+export const renameFile = asyncHandler(async (req, res) => {
+  const { file, access } = await ensureFileAccess(req.params.id, req.user._id, ["owner", "editor"]);
+  if (!file || !access) {
+    throw new AppError("You do not have permission to rename this item.", 403);
+  }
+
+  const filename = req.body.filename?.trim();
+  if (!filename) {
+    throw new AppError("A name is required.", 400);
+  }
+
+  file.filename = filename;
+  if (file.category !== "file") {
+    file.originalName = filename;
+  }
+  appendActivity(file, req.user._id, "renamed item", { filename });
+  await file.save();
+
+  const updated = await populateFile(File.findById(file._id));
+  res.json({ success: true, file: buildFileResponse(updated, req.user._id) });
 });
 
 export const moveFile = asyncHandler(async (req, res) => {
@@ -339,22 +484,87 @@ export const moveFile = asyncHandler(async (req, res) => {
   res.json({ success: true, file: buildFileResponse(updated, req.user._id) });
 });
 
+export const bulkFileAction = asyncHandler(async (req, res) => {
+  const { ids = [], action, destinationId = null } = req.body;
+  const fileIds = uniqueIds(ids);
+
+  if (!fileIds.length) {
+    throw new AppError("Select at least one item.", 400);
+  }
+
+  if (!action) {
+    throw new AppError("Bulk action is required.", 400);
+  }
+
+  const results = [];
+
+  for (const fileId of fileIds) {
+    const acceptedRoles = action === "delete" ? ["owner"] : ["owner", "editor"];
+    const { file, access } = await ensureFileAccess(fileId, req.user._id, acceptedRoles, {
+      includeTrashed: action === "restore" || action === "delete"
+    });
+
+    if (!file || !access) continue;
+
+    if (action === "trash") {
+      await trashTree(file, req.user._id);
+      results.push({ id: fileId, status: "trashed" });
+      continue;
+    }
+
+    if (action === "restore") {
+      await restoreTree(file, req.user._id);
+      results.push({ id: fileId, status: "restored" });
+      continue;
+    }
+
+    if (action === "delete") {
+      await permanentDeleteTree(file);
+      results.push({ id: fileId, status: "deleted" });
+      continue;
+    }
+
+    if (action === "move") {
+      const normalizedDestination = normalizeId(destinationId);
+      if (normalizedDestination && normalizedDestination === normalizeId(file._id)) {
+        continue;
+      }
+      if (file.category === "folder" && normalizedDestination && await isDescendantOf(file._id, normalizedDestination)) {
+        continue;
+      }
+      if (destinationId) {
+        const { file: targetParent, access: parentAccess } = await ensureFileAccess(destinationId, req.user._id, ["owner", "editor"]);
+        if (!targetParent || !parentAccess || targetParent.category !== "folder") continue;
+      }
+      file.parent = destinationId || null;
+      appendActivity(file, req.user._id, "moved item", { parent: destinationId || null, bulk: true });
+      await file.save();
+      results.push({ id: fileId, status: "moved" });
+      continue;
+    }
+
+    if (["star", "unstar", "pin", "unpin"].includes(action)) {
+      const key = action.includes("pin") ? "pinnedBy" : "starredBy";
+      const enabled = !action.startsWith("un");
+      updateFavoriteState(file, key, req.user._id, enabled);
+      appendActivity(file, req.user._id, `${enabled ? "enabled" : "removed"} ${action.includes("pin") ? "pin" : "star"}`, { bulk: true });
+      await file.save();
+      results.push({ id: fileId, status: action });
+    }
+  }
+
+  res.json({ success: true, results, processed: results.length });
+});
+
 export const toggleFavorite = asyncHandler(async (req, res) => {
   const { file, access } = await ensureFileAccess(req.params.id, req.user._id);
   if (!file || !access) throw new AppError("Access denied.", 403);
 
   const isPin = req.params.kind === "pin";
   const key = isPin ? "pinnedBy" : "starredBy";
-  const userId = normalizeId(req.user._id);
-  const current = (file[key] || []).map((entry) => normalizeId(entry));
+  const enabled = updateFavoriteState(file, key, req.user._id);
 
-  if (current.includes(userId)) {
-    file[key] = current.filter((entry) => entry !== userId);
-  } else {
-    file[key] = [...current, userId];
-  }
-
-  appendActivity(file, req.user._id, `${current.includes(userId) ? "removed" : "enabled"} ${isPin ? "pin" : "star"}`);
+  appendActivity(file, req.user._id, `${enabled ? "enabled" : "removed"} ${isPin ? "pin" : "star"}`);
   await file.save();
 
   const updated = await populateFile(File.findById(file._id));
@@ -365,21 +575,7 @@ export const trashFile = asyncHandler(async (req, res) => {
   const { file, access } = await ensureFileAccess(req.params.id, req.user._id, ["owner", "editor"]);
   if (!file || !access) throw new AppError("You do not have permission to trash this item.", 403);
 
-  const ids = await collectTreeIds(file._id);
-  await File.updateMany(
-    { _id: { $in: ids } },
-    {
-      $set: {
-        isTrashed: true,
-        trashedAt: new Date(),
-        trashedBy: req.user._id
-      }
-    }
-  );
-
-  appendActivity(file, req.user._id, file.category === "folder" ? "moved folder tree to trash" : "moved item to trash");
-  await file.save();
-
+  await trashTree(file, req.user._id);
   await notifyUsers(
     file.sharedWith.map((entry) => entry.user._id || entry.user),
     { type: "trash", title: "Item moved to trash", message: `${file.filename} was moved to trash`, file: file._id }
@@ -392,43 +588,79 @@ export const restoreFile = asyncHandler(async (req, res) => {
   const { file, access } = await ensureFileAccess(req.params.id, req.user._id, ["owner", "editor"], { includeTrashed: true });
   if (!file || !access) throw new AppError("You do not have permission to restore this item.", 403);
 
-  const ids = await collectTreeIds(file._id);
-  await File.updateMany(
-    { _id: { $in: ids } },
-    {
-      $set: { isTrashed: false },
-      $unset: { trashedAt: 1, trashedBy: 1 }
-    }
-  );
-
-  appendActivity(file, req.user._id, file.category === "folder" ? "restored folder tree" : "restored item from trash");
-  await file.save();
-
+  await restoreTree(file, req.user._id);
   await notifyUsers(
     file.sharedWith.map((entry) => entry.user._id || entry.user),
     { type: "restore", title: "Item restored", message: `${file.filename} was restored`, file: file._id }
   );
 
-  res.json({ success: true, message: "Item restored." });
+  res.json({ success: true, message: "Item restored to its original location." });
 });
 
 export const deleteFile = asyncHandler(async (req, res) => {
   const { file, access } = await ensureFileAccess(req.params.id, req.user._id, ["owner"], { includeTrashed: true });
   if (!file || !access) throw new AppError("Only the owner can delete this file.", 403);
 
-  const ids = await collectTreeIds(file._id);
-  const allFiles = await File.find({ _id: { $in: ids } }).select("storageKey");
+  await permanentDeleteTree(file);
+  res.json({ success: true, message: "Item deleted permanently." });
+});
 
-  await Promise.all(
-    allFiles
-      .filter((entry) => entry.storageKey)
-      .map((entry) => storageConfig.removeFile(entry.storageKey).catch(() => null))
+export const addComment = asyncHandler(async (req, res) => {
+  const { file, access } = await ensureFileAccess(req.params.id, req.user._id, ["owner", "editor", "commenter"]);
+  if (!file || !access) throw new AppError("You do not have permission to comment on this file.", 403);
+
+  const message = req.body.message?.trim();
+  const anchorText = req.body.anchorText?.trim() || "";
+
+  if (!message) throw new AppError("Comment message is required.", 400);
+
+  file.comments.unshift({
+    user: req.user._id,
+    message,
+    anchorText,
+    resolved: false
+  });
+  appendActivity(file, req.user._id, "added comment", { anchorText });
+  await file.save();
+
+  const updated = await populateFile(File.findById(file._id));
+  await notifyUsers(
+    updated.sharedWith.map((entry) => entry.user._id || entry.user),
+    { type: "comment", title: "New comment", message: `${req.user.name} commented on ${updated.filename}`, file: updated._id }
   );
 
-  await DocumentVersion.deleteMany({ file: { $in: ids } });
-  await File.deleteMany({ _id: { $in: ids } });
+  res.status(201).json({ success: true, comments: (updated.comments || []).map(formatComment) });
+});
 
-  res.json({ success: true, message: "File deleted permanently." });
+export const resolveComment = asyncHandler(async (req, res) => {
+  const { file, access } = await ensureFileAccess(req.params.id, req.user._id, ["owner", "editor", "commenter"]);
+  if (!file || !access) throw new AppError("You do not have permission to update comments on this file.", 403);
+
+  const comment = file.comments.id(req.params.commentId);
+  if (!comment) throw new AppError("Comment not found.", 404);
+
+  comment.resolved = req.body.resolved ?? true;
+  appendActivity(file, req.user._id, comment.resolved ? "resolved comment" : "reopened comment");
+  await file.save();
+
+  const updated = await populateFile(File.findById(file._id));
+  res.json({ success: true, comments: (updated.comments || []).map(formatComment) });
+});
+
+export const restoreDocumentVersion = asyncHandler(async (req, res) => {
+  const { file, access } = await ensureFileAccess(req.params.id, req.user._id, ["owner", "editor"]);
+  if (!file || !access) throw new AppError("You do not have permission to restore versions for this document.", 403);
+
+  const version = await DocumentVersion.findOne({ _id: req.params.versionId, file: file._id });
+  if (!version) throw new AppError("Version not found.", 404);
+
+  file.content = version.content;
+  file.lastOpenedAt = new Date();
+  appendActivity(file, req.user._id, "restored version", { versionId: version._id });
+  await file.save();
+  await DocumentVersion.create({ file: file._id, content: version.content, editedBy: req.user._id });
+
+  res.json({ success: true, content: version.content, updatedAt: file.updatedAt });
 });
 
 export const getActivityFeed = asyncHandler(async (req, res) => {
@@ -436,7 +668,7 @@ export const getActivityFeed = asyncHandler(async (req, res) => {
   const files = await populateFile(
     File.find({ $or: [{ owner: userId }, { "sharedWith.user": userId }], activity: { $exists: true, $ne: [] } })
       .sort({ updatedAt: -1 })
-      .limit(40)
+      .limit(50)
   );
 
   const activity = files
@@ -451,7 +683,7 @@ export const getActivityFeed = asyncHandler(async (req, res) => {
       }))
     )
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-    .slice(0, 40);
+    .slice(0, 50);
 
   res.json({ success: true, activity });
 });
