@@ -566,8 +566,8 @@ export const EditorPage = () => {
         </div>
       </div>
 
-      <Modal open={showVersions} onClose={() => setShowVersions(false)} title="Version history" description="Recent saves are available here without cluttering the main editing surface.">
-        <div className="space-y-3">
+      <Modal open={showVersions} onClose={() => setShowVersions(false)} title="Version history" description="Recent saves are available here without cluttering the main editing surface." sizeClassName="max-w-xl" bodyClassName="overflow-y-auto pr-1">
+        <div className="space-y-3 pb-1">
           {versions.length ? versions.map((version) => (
             <div key={version._id} className="rounded-2xl border border-[#e7ecf4] bg-[#fafcff] px-4 py-3">
               <div className="flex items-start justify-between gap-3">
@@ -586,3 +586,5 @@ export const EditorPage = () => {
     </div>
   );
 };
+
+

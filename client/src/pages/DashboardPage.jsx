@@ -177,7 +177,7 @@ export const DashboardPage = () => {
 
   useEffect(() => {
     setSelectedIds((current) => current.filter((id) => files.some((file) => file.id === id)));
-    setPreviewId((current) => (current && files.some((file) => file.id === current) ? current : files[0]?.id || null));
+    setPreviewId((current) => (current && files.some((file) => file.id === current) ? current : null));
   }, [files]);
 
   useEffect(() => {
@@ -252,7 +252,7 @@ export const DashboardPage = () => {
   ]), [filteredFiles]);
 
   const selectedFiles = useMemo(() => filteredFiles.filter((file) => selectedIds.includes(file.id)), [filteredFiles, selectedIds]);
-  const previewFile = useMemo(() => filteredFiles.find((file) => file.id === previewId) || selectedFiles[0] || null, [filteredFiles, previewId, selectedFiles]);
+  const previewFile = useMemo(() => filteredFiles.find((file) => file.id === previewId) || null, [filteredFiles, previewId]);
   const destinationOptions = useMemo(() => {
     const map = new Map();
     map.set("root", { value: "root", label: "My Drive" });
@@ -474,14 +474,9 @@ export const DashboardPage = () => {
     }
   };
 
-  const handleSelectFile = (file, event) => {
+  const handlePreviewFile = (file) => {
     setPreviewId(file.id);
     setRenamingId(null);
-    if (event?.metaKey || event?.ctrlKey) {
-      setSelectedIds((current) => current.includes(file.id) ? current.filter((id) => id !== file.id) : [...current, file.id]);
-      return;
-    }
-    setSelectedIds([file.id]);
   };
 
   const handleToggleSelect = (file, checked) => {
@@ -491,7 +486,6 @@ export const DashboardPage = () => {
 
   const handleSelectAll = (checked) => {
     setSelectedIds(checked ? filteredFiles.map((file) => file.id) : []);
-    setPreviewId(checked ? filteredFiles[0]?.id || null : null);
   };
 
   const handleMoveSubmit = async (destinationId) => {
@@ -522,7 +516,7 @@ export const DashboardPage = () => {
   const meta = sectionMeta[activeSection];
   const allSelected = filteredFiles.length && selectedIds.length === filteredFiles.length;
   const someSelected = selectedIds.length > 0;
-  const listGridColumns = `48px minmax(280px,1.9fr) minmax(150px,0.8fr) ${visibleColumns.lastOpened ? "minmax(132px,0.74fr)" : ""} ${visibleColumns.role ? "minmax(132px,0.74fr)" : ""} minmax(132px,0.75fr) minmax(108px,0.45fr) 68px`;
+  const listGridColumns = `48px minmax(240px,1.6fr) minmax(170px,0.85fr) ${visibleColumns.lastOpened ? "minmax(132px,0.72fr)" : ""} ${visibleColumns.role ? "minmax(112px,0.52fr)" : ""} minmax(132px,0.72fr) minmax(88px,0.38fr) 68px`;
 
   return (
     <div className="min-h-screen bg-drive-bg p-4">
@@ -653,56 +647,51 @@ export const DashboardPage = () => {
                   ))}
                 </div>
               ) : (
-                <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
-                  <div className="overflow-visible rounded-[24px] border border-[#e4ebf4] bg-white">
-                    <div className="grid min-h-[54px] items-center bg-[#f8fbff] px-4 text-sm font-medium text-drive-subtext" style={{ gridTemplateColumns: listGridColumns }}>
-                      <div className="flex justify-center"><input type="checkbox" className="h-4 w-4 rounded border-[#c7d2e3] text-[#1a73e8]" checked={Boolean(allSelected)} onChange={(event) => handleSelectAll(event.target.checked)} /></div>
-                      <div>Name</div>
-                      <div>Owner</div>
-                      {visibleColumns.lastOpened ? <div>Last opened</div> : null}
-                      {visibleColumns.role ? <div>Role</div> : null}
-                      <div>Modified</div>
-                      <div>Size</div>
-                      <div className="text-right">Actions</div>
+                <div className="grid gap-4">
+                  <div className="overflow-hidden rounded-[24px] border border-[#e4ebf4] bg-white">
+                    <div className="overflow-x-auto">
+                      <div className="min-w-[1080px]">
+                        <div className="grid min-h-[54px] items-center bg-[#f8fbff] px-4 text-sm font-medium text-drive-subtext" style={{ gridTemplateColumns: listGridColumns }}>
+                          <div className="flex justify-center"><input type="checkbox" className="h-4 w-4 rounded border-[#c7d2e3] text-[#1a73e8]" checked={Boolean(allSelected)} onChange={(event) => handleSelectAll(event.target.checked)} /></div>
+                          <div>Name</div>
+                          <div>Owner</div>
+                          {visibleColumns.lastOpened ? <div>Last opened</div> : null}
+                          {visibleColumns.role ? <div>Role</div> : null}
+                          <div>Modified</div>
+                          <div>Size</div>
+                          <div className="text-right">Actions</div>
+                        </div>
+                        {filteredFiles.map((file) => (
+                          <FileRow
+                            key={file.id}
+                            file={file}
+                            selected={selectedIds.includes(file.id)}
+                            previewed={previewId === file.id}
+                            renaming={renamingId === file.id}
+                            visibleColumns={visibleColumns}
+                            denseMode={denseMode}
+                            onPreview={handlePreviewFile}
+                            onToggleSelect={handleToggleSelect}
+                            onOpen={openItem}
+                            onShare={(item) => { setShareTarget(item); setShowShare(true); }}
+                            onDelete={handleTrash}
+                            onPermanentDelete={handleDeletePermanently}
+                            onStar={(item) => handleFavorite(item, "star")}
+                            onPin={(item) => handleFavorite(item, "pin")}
+                            onRestore={handleRestore}
+                            onRenameStart={(item) => { setPreviewId(item.id); setSelectedIds([item.id]); setRenamingId(item.id); }}
+                            onRename={handleRename}
+                            onCopyLink={handleCopyLink}
+                            onDragStartFile={handleDragStartFile}
+                            onDragEndFile={handleDragEndFile}
+                            onDropIntoFolder={handleDropIntoFolder}
+                          />
+                        ))}
+                      </div>
                     </div>
-                    {filteredFiles.map((file) => (
-                      <FileRow
-                        key={file.id}
-                        file={file}
-                        selected={selectedIds.includes(file.id)}
-                        renaming={renamingId === file.id}
-                        visibleColumns={visibleColumns}
-                        denseMode={denseMode}
-                        onSelect={handleSelectFile}
-                        onToggleSelect={handleToggleSelect}
-                        onOpen={openItem}
-                        onShare={(item) => { setShareTarget(item); setShowShare(true); }}
-                        onDelete={handleTrash}
-                        onPermanentDelete={handleDeletePermanently}
-                        onStar={(item) => handleFavorite(item, "star")}
-                        onPin={(item) => handleFavorite(item, "pin")}
-                        onRestore={handleRestore}
-                        onRenameStart={(item) => { setPreviewId(item.id); setSelectedIds([item.id]); setRenamingId(item.id); }}
-                        onRename={handleRename}
-                        onCopyLink={handleCopyLink}
-                        onDragStartFile={handleDragStartFile}
-                        onDragEndFile={handleDragEndFile}
-                        onDropIntoFolder={handleDropIntoFolder}
-                      />
-                    ))}
                   </div>
 
-                  <PreviewPanel
-                    file={previewFile}
-                    onOpen={openItem}
-                    onShare={(item) => { setShareTarget(item); setShowShare(true); }}
-                    onCopyLink={handleCopyLink}
-                    onToggleStar={(item) => handleFavorite(item, "star")}
-                    onTogglePin={(item) => handleFavorite(item, "pin")}
-                    onTrash={handleTrash}
-                    onRestore={handleRestore}
-                    onDelete={handleDeletePermanently}
-                  />
+
                 </div>
               )
             ) : null}
@@ -710,6 +699,20 @@ export const DashboardPage = () => {
         </main>
       </div>
 
+
+      <PreviewPanel
+        open={Boolean(previewFile)}
+        file={previewFile}
+        onClose={() => setPreviewId(null)}
+        onOpen={openItem}
+        onShare={(item) => { setShareTarget(item); setShowShare(true); }}
+        onCopyLink={handleCopyLink}
+        onToggleStar={(item) => handleFavorite(item, "star")}
+        onTogglePin={(item) => handleFavorite(item, "pin")}
+        onTrash={handleTrash}
+        onRestore={handleRestore}
+        onDelete={handleDeletePermanently}
+      />
       <UploadModal open={showUpload} onClose={() => setShowUpload(false)} onSubmit={handleUpload} />
       <NewDocumentModal open={showNewDoc} onClose={() => setShowNewDoc(false)} onSubmit={handleNewDocument} />
       <CreateFolderModal open={showNewFolder} onClose={() => setShowNewFolder(false)} onSubmit={handleCreateFolder} />
@@ -750,4 +753,16 @@ export const DashboardPage = () => {
     </div>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+
 

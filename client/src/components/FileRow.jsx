@@ -1,17 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ArrowUturnLeftIcon,
-  BookmarkIcon,
-  ChatBubbleLeftEllipsisIcon,
   DocumentTextIcon,
   EllipsisVerticalIcon,
   FolderIcon,
   GlobeAltIcon,
   LinkIcon,
-  PencilSquareIcon,
-  ShareIcon,
-  StarIcon,
-  TrashIcon,
   UsersIcon
 } from "@heroicons/react/24/outline";
 import { BookmarkIcon as BookmarkSolidIcon, StarIcon as StarSolidIcon } from "@heroicons/react/24/solid";
@@ -46,7 +39,7 @@ const stopPropagation = (event) => event.stopPropagation();
 const AvatarStack = ({ file }) => {
   const people = useMemo(() => {
     const owner = file.owner ? [{ ...file.owner, key: `owner-${file.owner._id || file.owner.username}` }] : [];
-    const shared = (file.sharedWith || []).map((entry) => ({ ...entry.user, role: entry.role, key: entry.user._id }));
+    const shared = (file.sharedWith || []).map((entry) => ({ ...entry.user, key: entry.user._id }));
     const unique = [];
     const seen = new Set();
     [...owner, ...shared].forEach((person) => {
@@ -88,12 +81,6 @@ const FileBadges = ({ file }) => {
         {accessSummary === "Public" ? <GlobeAltIcon className="h-3.5 w-3.5" /> : accessSummary === "Link" ? <LinkIcon className="h-3.5 w-3.5" /> : <UsersIcon className="h-3.5 w-3.5" />}
         {accessSummary}
       </span>
-      {file.commentsCount ? (
-        <span className="inline-flex items-center gap-1 rounded-full bg-[#fff7e0] px-2.5 py-1 text-[11px] font-medium text-[#b06000]">
-          <ChatBubbleLeftEllipsisIcon className="h-3.5 w-3.5" />
-          {file.commentsCount}
-        </span>
-      ) : null}
     </div>
   );
 };
@@ -105,13 +92,9 @@ const RowActions = ({ file, canManage, onOpen, onShare, onDelete, onPermanentDel
 
   useEffect(() => {
     if (!open) return undefined;
-
     const handleClick = (event) => {
-      if (!wrapperRef.current?.contains(event.target)) {
-        setOpen(false);
-      }
+      if (!wrapperRef.current?.contains(event.target)) setOpen(false);
     };
-
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open]);
@@ -151,10 +134,11 @@ const RowActions = ({ file, canManage, onOpen, onShare, onDelete, onPermanentDel
 export const FileRow = ({
   file,
   selected = false,
+  previewed = false,
   renaming = false,
   visibleColumns,
   denseMode = false,
-  onSelect,
+  onPreview,
   onToggleSelect,
   onOpen,
   onShare,
@@ -178,16 +162,19 @@ export const FileRow = ({
   const canManage = file.accessRole === "owner";
   const owner = file.owner?.name || file.owner?.username || "Unknown";
   const rowHeight = denseMode ? "min-h-[64px]" : "min-h-[76px]";
-  const gridTemplate = `48px minmax(280px,1.9fr) minmax(150px,0.8fr) ${visibleColumns.lastOpened ? "minmax(132px,0.74fr)" : ""} ${visibleColumns.role ? "minmax(132px,0.74fr)" : ""} minmax(132px,0.75fr) minmax(108px,0.45fr) 68px`;
+  const gridTemplate = `48px minmax(240px,1.6fr) minmax(170px,0.85fr) ${visibleColumns.lastOpened ? "minmax(132px,0.72fr)" : ""} ${visibleColumns.role ? "minmax(112px,0.52fr)" : ""} minmax(132px,0.72fr) minmax(88px,0.38fr) 68px`;
+  const rowTone = selected
+    ? "bg-[#edf4ff]"
+    : previewed
+      ? "bg-[#f8fbff] ring-1 ring-inset ring-[#d6e6ff]"
+      : "bg-white hover:bg-[#fbfcff]";
 
   useEffect(() => {
     setDraftName(file.filename);
   }, [file.filename]);
 
   useEffect(() => {
-    if (renaming) {
-      window.requestAnimationFrame(() => inputRef.current?.focus());
-    }
+    if (renaming) window.requestAnimationFrame(() => inputRef.current?.focus());
   }, [renaming]);
 
   const commitRename = () => {
@@ -202,9 +189,9 @@ export const FileRow = ({
 
   return (
     <div
-      className={`grid ${rowHeight} items-center border-t border-[#edf2f8] px-4 text-sm text-drive-text transition-all duration-150 ${selected ? "bg-[#edf4ff]" : "bg-white hover:bg-[#f8fbff]"} ${dragOver ? "ring-2 ring-inset ring-[#1a73e8]" : ""}`}
+      className={`grid ${rowHeight} items-center border-t border-[#edf2f8] px-4 text-sm text-drive-text transition-all duration-150 ${rowTone} ${dragOver ? "ring-2 ring-inset ring-[#1a73e8]" : ""}`}
       style={{ gridTemplateColumns: gridTemplate }}
-      onClick={(event) => onSelect(file, event)}
+      onClick={() => onPreview(file)}
       onDoubleClick={() => onOpen(file)}
       draggable={!file.isTrashed}
       onDragStart={(event) => onDragStartFile(event, file)}
@@ -290,5 +277,3 @@ export const FileRow = ({
     </div>
   );
 };
-
-
