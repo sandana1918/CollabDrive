@@ -15,7 +15,7 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     steps:
       - name: Checkout repository
@@ -38,3 +38,9 @@ jobs:
           VITE_API_URL: http://localhost:5000/api
           VITE_SOCKET_URL: http://localhost:5000
         run: npm --prefix client run build
+
+      - name: Build backend Docker image
+        run: docker build -f server/Dockerfile -t collabdrive-server .
+
+      - name: Build frontend Docker image
+        run: docker build -f client/Dockerfile -t collabdrive-client .

@@ -141,4 +141,25 @@ npm --prefix client run dev
 - The workflow installs workspace dependencies, validates the backend entry file, and builds the frontend
 - Continuous deployment is handled by Railway through the connected GitHub repository
 - In Railway, enable `Wait for CI` on each service if you want deployments to wait for successful GitHub Actions checks
+## Docker
+
+You can run the full stack locally with Docker Compose.
+
+### Build and start
+
+```bash
+docker compose up --build
+```
+
+Services:
+- Frontend: `http://localhost:4173`
+- Backend: `http://localhost:5000/api/health`
+- MongoDB: `mongodb://localhost:27017`
+
+The Docker Compose setup uses:
+- MongoDB container for local development
+- local file storage for uploads
+- Nginx to serve the built frontend SPA
+
+If you want Docker in a cloud environment, you can reuse the same Dockerfiles and switch environment variables to MongoDB Atlas and AWS S3.
 
