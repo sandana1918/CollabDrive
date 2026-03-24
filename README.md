@@ -1,6 +1,6 @@
 # CollabDrive
 
-CollabDrive is a full-stack cloud file storage and real-time collaborative editing platform inspired by Google Drive and Google Docs. It combines secure authentication, file management, collaborative plain text or markdown editing, sharing controls, and an editorial, production-grade UI.
+CollabDrive is a full-stack cloud file storage and real-time collaborative editing platform inspired by Google Drive and Google Docs. It combines secure authentication, File management, collaborative plain text or markdown editing, sharing controls, and an editorial, production-grade UI.
 
 ## Features
 
