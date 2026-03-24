@@ -1,19 +1,119 @@
 # CollabDrive
 
-CollabDrive is a full-stack cloud file storage and real-time collaborative editing platform inspired by Google Drive and Google Docs. It combines secure authentication, File management, collaborative plain text or markdown editing, sharing controls, and an editorial, production-grade UI.
+CollabDrive is a cloud-based file storage and real-time collaborative document editing platform inspired by Google Drive and Google Docs. It combines secure authentication, nested file organization, rich document editing, role-based sharing, live collaboration, cloud storage, and a production-style deployment architecture.
 
-## Features
+## Live Deployment
 
-- JWT authentication with bcrypt password hashing
-- MongoDB + Mongoose data layer
-- File upload, download, delete, and metadata management
-- Cloud-ready storage abstraction with local fallback and AWS S3 integration points
-- Drive-inspired dashboard with responsive cards, search, upload modal, and sharing modal
-- Real-time document collaboration with Socket.io rooms
-- Autosave every 5 seconds and on disconnect
-- Role-based sharing: owner, editor, viewer
-- Basic version history and activity tracking
-- Ready for deployment on Render or Railway
+- Frontend: [https://collabdrive-client-production.up.railway.app](https://collabdrive-client-production.up.railway.app)
+- Backend: [https://collabdrive-server-production.up.railway.app](https://collabdrive-server-production.up.railway.app)
+- Health check: [https://collabdrive-server-production.up.railway.app/api/health](https://collabdrive-server-production.up.railway.app/api/health)
+
+## What The Project Does
+
+CollabDrive allows users to:
+
+- create accounts and sign in securely
+- upload, preview, organize, rename, move, trash, restore, and download files
+- create folders and build nested drive hierarchies
+- create collaborative documents and edit them in real time
+- share files and documents with role-based permissions
+- use private, public, and link-based sharing models
+- view activity logs, notifications, version history, and metadata
+- store uploaded assets in AWS S3 and metadata/content in MongoDB Atlas
+
+## Core Features
+
+### Authentication and Security
+
+- JWT-based authentication
+- bcrypt password hashing
+- protected backend routes and middleware
+- role-based access control for files and documents
+- roles: `owner`, `editor`, `commenter`, `viewer`
+- environment-based secret and deployment configuration
+
+### Drive and File Management
+
+- Google Drive-like dashboard and file browser
+- nested folders and breadcrumb navigation
+- list and grid views
+- search, filters, sorting, starring, pinning, and trash
+- file preview panel and activity panel
+- drag-and-drop upload support
+- file metadata and ownership tracking
+
+### Real-Time Collaborative Editor
+
+- Tiptap-based editor
+- Socket.io powered live collaboration
+- autosave and save on disconnect
+- presence indicators and live collaboration awareness
+- version history and restore support
+- commenter mode and access-aware editing states
+
+### Sharing and Access Control
+
+- share by username or email
+- owner, editor, commenter, and viewer roles
+- revoke access
+- visibility controls: private, public, and link
+- copyable share links
+
+### Cloud and Deployment Readiness
+
+- Railway deployment for frontend and backend
+- MongoDB Atlas for managed cloud database
+- AWS S3 for file storage
+- Docker and Docker Compose support
+- GitHub Actions CI + Railway CD
+
+## Architecture
+
+### Final Cloud Architecture
+
+- Frontend hosted on Railway
+- Backend hosted on Railway
+- Database hosted on MongoDB Atlas
+- File storage hosted on AWS S3
+- Real-time collaboration handled with Socket.io over the deployed Node.js backend
+
+### Application Flow
+
+1. User interacts with the React frontend.
+2. Frontend calls the Express REST API for auth, file, sharing, and metadata actions.
+3. Backend stores structured data in MongoDB Atlas.
+4. Uploaded files are stored in AWS S3.
+5. Real-time document updates are synchronized through Socket.io rooms.
+
+## Tech Stack
+
+### Frontend
+
+- React
+- Vite
+- Tailwind CSS
+- Framer Motion
+- Socket.io Client
+- Tiptap
+
+### Backend
+
+- Node.js
+- Express
+- MongoDB + Mongoose
+- Socket.io
+- Multer
+- AWS SDK for JavaScript v3
+
+### DevOps / Cloud
+
+- Railway
+- MongoDB Atlas
+- AWS S3
+- GitHub Actions
+- Docker
+- Docker Compose
+- Nginx
 
 ## Project Structure
 
@@ -28,26 +128,36 @@ CollabDrive is a full-stack cloud file storage and real-time collaborative editi
   /services
   /sockets
   /utils
+/.github/workflows
+docker-compose.yml
 ```
 
-## Tech Stack
+## Environment Variables
 
-Frontend:
-- React
-- Vite
-- Tailwind CSS
-- Framer Motion
-- Socket.io Client
+### Backend (`server/.env`)
 
-Backend:
-- Node.js
-- Express
-- MongoDB + Mongoose
-- Socket.io
-- Multer
-- AWS SDK
+```env
+PORT=5000
+CLIENT_URL=http://localhost:5173
+MONGODB_URI=mongodb://127.0.0.1:27017/collabdrive
+JWT_SECRET=change-me
+JWT_EXPIRES_IN=7d
+STORAGE_PROVIDER=local
+LOCAL_UPLOAD_DIR=uploads
+AWS_REGION=ap-south-1
+AWS_S3_BUCKET=your-bucket-name
+AWS_ACCESS_KEY_ID=your-access-key
+AWS_SECRET_ACCESS_KEY=your-secret-key
+```
 
-## Setup
+### Frontend (`client/.env`)
+
+```env
+VITE_API_URL=http://localhost:5000/api
+VITE_SOCKET_URL=http://localhost:5000
+```
+
+## Local Development Setup
 
 ### 1. Install dependencies
 
@@ -57,22 +167,14 @@ npm --prefix server install
 npm --prefix client install
 ```
 
-### 2. Configure environment files
+### 2. Create env files
 
-Create these files from the provided examples:
+Create:
 
-```bash
-cp server/.env.example server/.env
-cp client/.env.example client/.env
-```
+- `server/.env`
+- `client/.env`
 
-Set values for:
-- `MONGODB_URI`
-- `JWT_SECRET`
-- `CLIENT_URL`
-- `VITE_API_URL`
-- `VITE_SOCKET_URL`
-- Optional S3 credentials if you want cloud storage
+using the example values above or the included example files.
 
 ### 3. Run locally
 
@@ -88,25 +190,80 @@ Frontend:
 npm --prefix client run dev
 ```
 
-## API Summary
+Local URLs:
+
+- Frontend: `http://localhost:5173`
+- Backend health: `http://localhost:5000/api/health`
+
+## Docker Setup
+
+Docker support is included for containerized local development.
+
+### Run with Docker Compose
+
+```bash
+docker compose up --build
+```
+
+Docker local URLs:
+
+- Frontend: `http://localhost:4173`
+- Backend health: `http://localhost:5000/api/health`
+- MongoDB: `mongodb://localhost:27017`
+
+The Docker setup uses:
+
+- MongoDB container for local development
+- local upload storage inside the backend container
+- Nginx to serve the built frontend SPA
+
+## CI/CD
+
+### Continuous Integration
+
+GitHub Actions is configured in:
+
+- `.github/workflows/ci.yml`
+
+The CI workflow runs on every push and pull request to `main` and performs:
+
+- dependency installation
+- backend entrypoint syntax validation
+- frontend production build
+- backend Docker image build
+- frontend Docker image build
+
+### Continuous Deployment
+
+Deployment is handled by Railway from the connected GitHub repository.
+
+Recommended production setup:
+
+- enable `Wait for CI` on Railway services
+- deploy only after GitHub Actions passes
+
+## Key API Areas
 
 ### Auth
+
 - `POST /api/auth/register`
 - `POST /api/auth/login`
 - `GET /api/auth/me`
 
 ### Files
-- `GET /api/files`
-- `POST /api/files/upload`
-- `POST /api/files/documents`
-- `GET /api/files/:id/content`
-- `PATCH /api/files/:id/content`
-- `GET /api/files/:id/download`
-- `DELETE /api/files/:id`
+
+- file upload, download, rename, move, delete
+- folder create and nested browsing
+- trash and restore
+- metadata lookup and search
+- content load and save
 
 ### Sharing
-- `POST /api/sharing/:id`
-- `DELETE /api/sharing/:id/:userId`
+
+- share with user
+- revoke user access
+- manage visibility and links
+- role-aware file access
 
 ## Collaboration Events
 
@@ -118,48 +275,41 @@ npm --prefix client run dev
 - `document-loaded`
 - `document-saved`
 
-## Deployment Notes
+## Deployment Summary
 
-### Render or Railway
+Final deployed stack:
 
-- Deploy the server as a Node service using `server/server.js`
-- Deploy the client as a static site from the `client` directory
-- Add environment variables from the example files
-- Set `CLIENT_URL` on the server to the deployed frontend URL
-- Set `VITE_API_URL` and `VITE_SOCKET_URL` on the client to the deployed backend URL
-- If using S3, set `STORAGE_PROVIDER=s3` and add AWS credentials
+- Railway for frontend hosting
+- Railway for backend hosting
+- MongoDB Atlas for database
+- AWS S3 for file storage
+- GitHub Actions + Railway for CI/CD
+
+## Current Status
+
+Implemented:
+
+- authentication and authorization
+- cloud file upload and metadata management
+- nested folders and drive UI
+- role-based sharing and access control
+- real-time collaborative editor
+- autosave and version history
+- cloud deployment
+- CI/CD
+- Docker support
+
+Future improvements possible:
+
+- deeper automated test coverage
+- stronger production monitoring and logging
+- stricter security hardening such as rate limiting and helmet
+- more advanced collaborative conflict resolution (CRDT/OT)
+- richer comments, suggestions, and review workflows
 
 ## Notes
 
-- Local uploads are stored in `server/uploads`
-- Document editing uses last-write-wins sync, per your requirement
-- Rich text is intentionally not included; the editor is plain text / markdown focused
-- The current implementation is scaffolded for production structure, but dependency installation and end-to-end runtime validation still need to be run in the target environment.
-## CI/CD
-
-- GitHub Actions runs continuous integration on every push and pull request to `main`
-- The workflow installs workspace dependencies, validates the backend entry file, and builds the frontend
-- Continuous deployment is handled by Railway through the connected GitHub repository
-- In Railway, enable `Wait for CI` on each service if you want deployments to wait for successful GitHub Actions checks
-## Docker
-
-You can run the full stack locally with Docker Compose.
-
-### Build and start
-
-```bash
-docker compose up --build
-```
-
-Services:
-- Frontend: `http://localhost:4173`
-- Backend: `http://localhost:5000/api/health`
-- MongoDB: `mongodb://localhost:27017`
-
-The Docker Compose setup uses:
-- MongoDB container for local development
-- local file storage for uploads
-- Nginx to serve the built frontend SPA
-
-If you want Docker in a cloud environment, you can reuse the same Dockerfiles and switch environment variables to MongoDB Atlas and AWS S3.
-
+- Local development can use local storage or S3 depending on `STORAGE_PROVIDER`
+- Production deployment uses MongoDB Atlas and AWS S3
+- Real-time collaboration currently uses a simpler last-write-wins model
+- For production security, rotate secrets if they were ever exposed during setup or screenshots
