@@ -13,3 +13,6 @@ server/server.log
 server/server.err.log
 
 client/client.err.log
+
+mongo-data/
+

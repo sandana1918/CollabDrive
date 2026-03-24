@@ -135,3 +135,10 @@ npm --prefix client run dev
 - Document editing uses last-write-wins sync, per your requirement
 - Rich text is intentionally not included; the editor is plain text / markdown focused
 - The current implementation is scaffolded for production structure, but dependency installation and end-to-end runtime validation still need to be run in the target environment.
+## CI/CD
+
+- GitHub Actions runs continuous integration on every push and pull request to `main`
+- The workflow installs workspace dependencies, validates the backend entry file, and builds the frontend
+- Continuous deployment is handled by Railway through the connected GitHub repository
+- In Railway, enable `Wait for CI` on each service if you want deployments to wait for successful GitHub Actions checks
+
