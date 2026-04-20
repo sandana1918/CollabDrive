@@ -41,6 +41,3 @@ jobs:
 
       - name: Build backend Docker image
         run: docker build -f server/Dockerfile -t collabdrive-server .
-
-      - name: Build frontend Docker image
-        run: docker build -f client/Dockerfile -t collabdrive-client client

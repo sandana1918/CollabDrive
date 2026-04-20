@@ -61,17 +61,17 @@ CollabDrive allows users to:
 
 ### Cloud and Deployment Readiness
 
-- Railway deployment for frontend and backend
+- Railway native Node deployment for the frontend and Railway backend deployment
 - MongoDB Atlas for managed cloud database
 - AWS S3 for file storage
-- Docker and Docker Compose support
+- Docker and Docker Compose support for local development
 - GitHub Actions CI + Railway CD
 
 ## Architecture
 
 ### Final Cloud Architecture
 
-- Frontend hosted on Railway
+- Frontend hosted on Railway using the native Node/Railpack builder
 - Backend hosted on Railway
 - Database hosted on MongoDB Atlas
 - File storage hosted on AWS S3
@@ -111,7 +111,7 @@ CollabDrive allows users to:
 - MongoDB Atlas
 - AWS S3
 - GitHub Actions
-- Docker
+- Docker for backend image validation and local Compose
 - Docker Compose
 - Nginx
 
@@ -197,7 +197,7 @@ Local URLs:
 
 ## Docker Setup
 
-Docker support is included for containerized local development.
+Docker support is included for containerized local development. The production frontend deployment is intentionally not Docker-based; Railway should build the `client` service with its native Node/Railpack builder.
 
 ### Run with Docker Compose
 
@@ -215,7 +215,7 @@ The Docker setup uses:
 
 - MongoDB container for local development
 - local upload storage inside the backend container
-- Nginx to serve the built frontend SPA
+- a local-only frontend Dockerfile at `client/Dockerfile.local`
 
 ## CI/CD
 
@@ -231,7 +231,6 @@ The CI workflow runs on every push and pull request to `main` and performs:
 - backend entrypoint syntax validation
 - frontend production build
 - backend Docker image build
-- frontend Docker image build
 
 ### Continuous Deployment
 
@@ -241,6 +240,10 @@ Recommended production setup:
 
 - enable `Wait for CI` on Railway services
 - deploy only after GitHub Actions passes
+- frontend service root directory: `/client`
+- frontend builder: Railway native Node/Railpack, not Docker
+- frontend build command: `npm ci && npm run build`
+- frontend start command: `npm run preview -- --host 0.0.0.0 --port $PORT`
 
 ## Key API Areas
 
@@ -279,7 +282,7 @@ Recommended production setup:
 
 Final deployed stack:
 
-- Railway for frontend hosting
+- Railway native Node/Railpack for frontend hosting
 - Railway for backend hosting
 - MongoDB Atlas for database
 - AWS S3 for file storage
@@ -297,7 +300,7 @@ Implemented:
 - autosave and version history
 - cloud deployment
 - CI/CD
-- Docker support
+- Docker support for backend validation and local development
 
 Future improvements possible:
 
