@@ -2,7 +2,8 @@ import { createServer } from "node:http";
 import { createReadStream, existsSync, statSync } from "node:fs";
 import { extname, join, normalize, resolve } from "node:path";
 
-const port = Number(process.env.PORT || 4173);
+const primaryPort = Number(process.env.PORT || 4173);
+const fallbackPort = 4173;
 const distDir = resolve("client", "dist");
 const indexFile = join(distDir, "index.html");
 
@@ -38,7 +39,8 @@ function sendFile(res, filePath) {
   createReadStream(filePath).pipe(res);
 }
 
-createServer((req, res) => {
+function createFrontendServer() {
+  return createServer((req, res) => {
   if (!existsSync(indexFile)) {
     res.writeHead(500, { "Content-Type": "text/plain; charset=utf-8" });
     res.end("CollabDrive frontend build not found. Run npm run build first.");
@@ -48,6 +50,23 @@ createServer((req, res) => {
   const filePath = safeFilePath(req.url || "/");
   const target = existsSync(filePath) && statSync(filePath).isFile() ? filePath : indexFile;
   sendFile(res, target);
-}).listen(port, "0.0.0.0", () => {
-  console.log(`CollabDrive frontend running on port ${port}`);
-});
+  });
+}
+
+function listen(port) {
+  createFrontendServer()
+    .listen(port, "0.0.0.0", () => {
+      console.log(`CollabDrive frontend running on port ${port}`);
+    })
+    .on("error", (error) => {
+      if (error.code !== "EADDRINUSE") {
+        throw error;
+      }
+    });
+}
+
+listen(primaryPort);
+
+if (primaryPort !== fallbackPort) {
+  listen(fallbackPort);
+}
