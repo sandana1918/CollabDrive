@@ -11,7 +11,7 @@
     "dev:server": "npm --prefix server run dev",
     "build": "npm --prefix client run build",
     "build:client": "npm --prefix client run build",
-    "start": "npm --prefix client run preview -- --host 0.0.0.0 --port $PORT",
+    "start": "node railway-client-server.js",
     "start:server": "npm --prefix server run start"
   },
   "dependencies": {
