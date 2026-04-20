@@ -99,7 +99,8 @@ export const registerCollaborationHandlers = (io) => {
       documentPresence.set(documentId, roomState);
 
       const content = unsavedDocumentState.get(documentId) ?? file.content;
-      const canSeed = !yState.initialized && !yState.seedingSocketId;
+      const canEdit = ["owner", "editor"].includes(role);
+      const canSeed = canEdit && !yState.initialized && !yState.seedingSocketId;
       if (canSeed) yState.seedingSocketId = socket.id;
       socket.emit("document-loaded", { content, role, documentFormat: file.documentFormat, userId: socket.user._id.toString() });
       socket.emit("yjs-state", {

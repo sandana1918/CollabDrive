@@ -283,6 +283,7 @@ export const EditorPage = () => {
         const params = linkToken ? { linkToken } : undefined;
         const { data } = await filesApi.getDocument(id, params);
         setFile(data.file);
+        roleRef.current = data.file.accessRole || "viewer";
         setRole(data.file.accessRole || "viewer");
         setVersions(data.versions || []);
         setComments(data.comments || []);
@@ -348,6 +349,7 @@ export const EditorPage = () => {
     });
 
     socket.on("document-loaded", (payload) => {
+      roleRef.current = payload.role;
       setRole(payload.role);
       setIsEditorEmpty(editor.isEmpty);
     });
@@ -357,6 +359,8 @@ export const EditorPage = () => {
       if (!initialized && canSeed && !seededYDocRef.current) {
         seededYDocRef.current = true;
         editor.commands.setContent(content || "<p></p>", true);
+      } else if (!initialized && !canSeed && editor.isEmpty) {
+        editor.commands.setContent(content || "<p></p>", false);
       }
       setIsEditorEmpty(editor.isEmpty);
     });
@@ -370,14 +374,6 @@ export const EditorPage = () => {
     socket.on("awareness-update", ({ update, senderSocketId }) => {
       if (senderSocketId === socket.id) return;
       applyAwarenessUpdate(awareness, toUint8Array(update), "socket");
-    });
-
-    socket.on("receive-changes", ({ content, senderId }) => {
-      if (senderId === user?._id) return;
-      if (content !== editor.getHTML()) {
-        editor.commands.setContent(content || "<p></p>", false);
-        setIsEditorEmpty(editor.isEmpty);
-      }
     });
 
     socket.on("presence-update", (nextPresence) => setPresence(nextPresence));
