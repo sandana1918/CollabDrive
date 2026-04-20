@@ -52,7 +52,7 @@ export const FileCard = ({ file, onOpen, onDelete, onShare, onStar, onPin, onRes
   const downloadUrl = filesApi.downloadUrl(file.id);
 
   return (
-    <div className="group overflow-hidden rounded-2xl border border-[#e0e6ef] bg-white transition duration-200 hover:border-[#c7d7f2] hover:shadow-soft">
+    <div className="motion-card group overflow-hidden rounded-2xl border border-[#e0e6ef] bg-white transition duration-200 hover:border-[#d9a8bc] hover:shadow-soft">
       <div className="flex items-center justify-between border-b border-[#eee2e8] px-4 py-3">
         <div className="flex min-w-0 items-center gap-3">
           <div className={`grid ${denseMode ? "h-9 w-9" : "h-10 w-10"} place-items-center rounded-2xl ${isDocument ? "bg-[#f5d0de] text-drive-blue" : isFolder ? "bg-[#fbefdd] text-[#d97706]" : "bg-[#f4eef2] text-slate-600"}`}>

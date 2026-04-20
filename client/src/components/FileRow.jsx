@@ -189,7 +189,7 @@ export const FileRow = ({
 
   return (
     <div
-      className={`grid ${rowHeight} items-center border-t border-[#eee2e8] px-4 text-sm text-drive-text transition-all duration-150 ${rowTone} ${dragOver ? "ring-2 ring-inset ring-[#9d174d]" : ""}`}
+      className={`motion-card grid ${rowHeight} items-center border-t border-[#eee2e8] px-4 text-sm text-drive-text transition-all duration-150 ${rowTone} ${dragOver ? "ring-2 ring-inset ring-[#9d174d]" : ""}`}
       style={{ gridTemplateColumns: gridTemplate }}
       onClick={() => onPreview(file)}
       onDoubleClick={() => onOpen(file)}

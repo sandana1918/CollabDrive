@@ -27,6 +27,10 @@ import { TextStyle } from "@tiptap/extension-text-style";
 import Color from "@tiptap/extension-color";
 import Highlight from "@tiptap/extension-highlight";
 import TextAlign from "@tiptap/extension-text-align";
+import Collaboration from "@tiptap/extension-collaboration";
+import CollaborationCaret from "@tiptap/extension-collaboration-caret";
+import * as Y from "yjs";
+import { Awareness, applyAwarenessUpdate, encodeAwarenessUpdate } from "y-protocols/awareness";
 import { filesApi, sharingApi } from "../api";
 import { Button } from "../components/ui/Button";
 import { Spinner } from "../components/ui/Spinner";
@@ -73,6 +77,14 @@ const ColorControl = ({ label, value, disabled, onPick }) => {
       <input ref={inputRef} type="color" className="hidden" value={value} onChange={(event) => onPick(event.target.value)} disabled={disabled} />
     </button>
   );
+};
+
+const toUint8Array = (update) => {
+  if (update instanceof Uint8Array) return update;
+  if (update instanceof ArrayBuffer) return new Uint8Array(update);
+  if (Array.isArray(update)) return new Uint8Array(update);
+  if (update?.data && Array.isArray(update.data)) return new Uint8Array(update.data);
+  return new Uint8Array(update || []);
 };
 
 const EditorToolbar = ({ editor, disabled, zoom, setZoom, onOpenVersions, onManageAccess, onToggleComments, canManageAccess, showComments }) => {
@@ -173,10 +185,14 @@ export const EditorPage = () => {
   const toast = useToast();
   const linkToken = searchParams.get("linkToken");
   const authToken = localStorage.getItem("collabdrive-token");
+  const yDoc = useMemo(() => new Y.Doc(), [id]);
+  const awareness = useMemo(() => new Awareness(yDoc), [yDoc]);
+  const collaborationProvider = useMemo(() => ({ awareness }), [awareness]);
   const socketRef = useRef(null);
   const roleRef = useRef("viewer");
   const localSocketIdRef = useRef(null);
   const sendChangesTimeoutRef = useRef(null);
+  const seededYDocRef = useRef(false);
   const pageRef = useRef(null);
   const [file, setFile] = useState(null);
   const [presence, setPresence] = useState([]);
@@ -198,17 +214,24 @@ export const EditorPage = () => {
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({ undoRedo: false }),
       Underline,
       TextStyle,
       FontSize,
       Color,
       Highlight.configure({ multicolor: true }),
-      TextAlign.configure({ types: ["heading", "paragraph"] })
+      TextAlign.configure({ types: ["heading", "paragraph"] }),
+      Collaboration.configure({ document: yDoc }),
+      CollaborationCaret.configure({
+        provider: collaborationProvider,
+        user: {
+          name: user?.name || user?.username || "Collaborator",
+          color: user?.avatarColor || "#9d174d"
+        }
+      })
     ],
     editable: false,
     autofocus: false,
-    content: "<p></p>",
     editorProps: {
       attributes: {
         class: "collab-editor-surface",
@@ -226,6 +249,11 @@ export const EditorPage = () => {
       const { from, to } = current.state.selection;
       const text = current.state.doc.textBetween(from, to, " ").trim();
       setSelectedText(text);
+      awareness.setLocalStateField("user", {
+        name: user?.name || user?.username || "Collaborator",
+        color: user?.avatarColor || "#9d174d"
+      });
+      awareness.setLocalStateField("cursor", { from, to, anchor: from, head: to });
       socketRef.current?.emit("cursor-move", { documentId: id, cursor: { from, to } });
 
       const paragraphText = current.state.selection.$from.parent.textContent || "";
@@ -237,16 +265,8 @@ export const EditorPage = () => {
     },
     onUpdate: ({ editor: current }) => {
       setIsEditorEmpty(current.isEmpty);
-      const socket = socketRef.current;
-      if (!socket || !["owner", "editor"].includes(roleRef.current)) return;
-      clearTimeout(sendChangesTimeoutRef.current);
-      const content = current.getHTML();
-      const { from, to } = current.state.selection;
-      sendChangesTimeoutRef.current = setTimeout(() => {
-        socket.emit("send-changes", { documentId: id, content, cursor: { from, to } });
-      }, 120);
     }
-  });
+  }, [yDoc, collaborationProvider, user?._id, user?.avatarColor, user?.name, user?.username]);
 
   useEffect(() => {
     roleRef.current = role;
@@ -267,7 +287,9 @@ export const EditorPage = () => {
         setVersions(data.versions || []);
         setComments(data.comments || []);
         setLastSavedAt(data.file.updatedAt || null);
-        editor.commands.setContent(data.content || "<p></p>", false);
+        if (!authToken) {
+          editor.commands.setContent(data.content || "<p></p>", false);
+        }
         setIsEditorEmpty(editor.isEmpty);
         if (["owner", "editor"].includes(data.file.accessRole)) {
           window.requestAnimationFrame(() => editor.commands.focus("start"));
@@ -281,13 +303,44 @@ export const EditorPage = () => {
     };
 
     loadDocument();
-  }, [id, editor, linkToken, navigate, toast, user]);
+  }, [id, editor, linkToken, navigate, toast, user, authToken]);
 
   useEffect(() => {
     if (!editor || !authToken) return undefined;
 
     const socket = io(import.meta.env.VITE_SOCKET_URL || "http://localhost:5000", { auth: { token: authToken } });
     socketRef.current = socket;
+
+    const getCursor = () => {
+      const { from, to } = editor.state.selection;
+      return { from, to, anchor: from, head: to };
+    };
+
+    const handleLocalYjsUpdate = (update, origin) => {
+      if (origin === "socket" || !["owner", "editor"].includes(roleRef.current)) return;
+      socket.emit("yjs-update", {
+        documentId: id,
+        update: Array.from(update),
+        cursor: getCursor()
+      });
+    };
+
+    const handleLocalAwarenessUpdate = ({ added, updated, removed }, origin) => {
+      if (origin === "socket") return;
+      const changedClients = added.concat(updated, removed);
+      if (!changedClients.length) return;
+      socket.emit("awareness-update", {
+        documentId: id,
+        update: Array.from(encodeAwarenessUpdate(awareness, changedClients))
+      });
+    };
+
+    yDoc.on("update", handleLocalYjsUpdate);
+    awareness.on("update", handleLocalAwarenessUpdate);
+    awareness.setLocalStateField("user", {
+      name: user?.name || user?.username || "Collaborator",
+      color: user?.avatarColor || "#9d174d"
+    });
 
     socket.on("connect", () => {
       localSocketIdRef.current = socket.id;
@@ -296,8 +349,27 @@ export const EditorPage = () => {
 
     socket.on("document-loaded", (payload) => {
       setRole(payload.role);
-      editor.commands.setContent(payload.content || "<p></p>", false);
       setIsEditorEmpty(editor.isEmpty);
+    });
+
+    socket.on("yjs-state", ({ update, initialized, canSeed, content }) => {
+      Y.applyUpdate(yDoc, toUint8Array(update), "socket");
+      if (!initialized && canSeed && !seededYDocRef.current) {
+        seededYDocRef.current = true;
+        editor.commands.setContent(content || "<p></p>", true);
+      }
+      setIsEditorEmpty(editor.isEmpty);
+    });
+
+    socket.on("yjs-update", ({ update, senderSocketId }) => {
+      if (senderSocketId === socket.id) return;
+      Y.applyUpdate(yDoc, toUint8Array(update), "socket");
+      setIsEditorEmpty(editor.isEmpty);
+    });
+
+    socket.on("awareness-update", ({ update, senderSocketId }) => {
+      if (senderSocketId === socket.id) return;
+      applyAwarenessUpdate(awareness, toUint8Array(update), "socket");
     });
 
     socket.on("receive-changes", ({ content, senderId }) => {
@@ -328,10 +400,13 @@ export const EditorPage = () => {
       if (["owner", "editor"].includes(roleRef.current)) {
         socket.emit("save-document", { documentId: id, content: editor.getHTML() });
       }
+      awareness.setLocalState(null);
       socket.disconnect();
+      awareness.off("update", handleLocalAwarenessUpdate);
+      yDoc.off("update", handleLocalYjsUpdate);
       socketRef.current = null;
     };
-  }, [id, editor, authToken, toast, user?._id]);
+  }, [id, editor, authToken, toast, user?._id, user?.name, user?.username, user?.avatarColor, yDoc, awareness]);
 
   useEffect(() => {
     if (!editor || !pageRef.current) return;
@@ -498,9 +573,9 @@ export const EditorPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#f7eff4] px-4 py-4 lg:px-6">
+    <div className="premium-aurora min-h-screen bg-[#f7eff4] px-4 py-4 lg:px-6">
       <div className="mx-auto max-w-[1720px] space-y-4">
-        <header className="rounded-[24px] border border-[#eadfe6] bg-white px-5 py-4 shadow-[0_1px_3px_rgba(60,64,67,0.15)]">
+        <header className="motion-card reveal-up rounded-[24px] border border-[#eadfe6] bg-white px-5 py-4 shadow-[0_1px_3px_rgba(60,64,67,0.15)]">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-center gap-4">
               <button className="grid h-11 w-11 place-items-center rounded-full text-[#6f6471] transition hover:bg-[#f7eff4]" onClick={() => navigate(user ? "/" : "/login")}>
@@ -543,7 +618,7 @@ export const EditorPage = () => {
         <EditorToolbar editor={editor} disabled={!canEdit} zoom={zoom} setZoom={setZoom} onOpenVersions={() => setShowVersions(true)} onManageAccess={() => setShowShare(true)} onToggleComments={() => setShowComments((current) => !current)} canManageAccess={canManageAccess} showComments={showComments} />
 
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
-          <section className="relative rounded-[24px] border border-[#eadfe6] bg-[#f3eaf0] px-4 py-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] lg:px-8">
+          <section className="motion-card relative rounded-[24px] border border-[#eadfe6] bg-[#f3eaf0] px-4 py-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] lg:px-8">
             <div className="mx-auto max-w-[960px]">
               <div className="mb-3 overflow-hidden rounded-t-[14px] border border-[#d7dce1] border-b-0 bg-[#f8f9fa] shadow-[0_1px_1px_rgba(60,64,67,0.08)]">
                 <div className="grid grid-cols-8 gap-0 border-b border-[#e1e6ed] px-6 py-2 text-[11px] uppercase tracking-[0.16em] text-[#7a828d]">

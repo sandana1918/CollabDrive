@@ -519,7 +519,7 @@ export const DashboardPage = () => {
   const listGridColumns = `48px minmax(240px,1.6fr) minmax(170px,0.85fr) ${visibleColumns.lastOpened ? "minmax(132px,0.72fr)" : ""} ${visibleColumns.role ? "minmax(112px,0.52fr)" : ""} minmax(132px,0.72fr) minmax(88px,0.38fr) 68px`;
 
   return (
-    <div className="min-h-screen bg-drive-bg lg:pr-4">
+    <div className="premium-aurora min-h-screen bg-drive-bg lg:pr-4">
       <div className="mx-auto flex min-h-screen max-w-[1760px] flex-col gap-5 lg:flex-row lg:items-stretch">
         <Sidebar
           activeSection={activeSection}
@@ -552,7 +552,7 @@ export const DashboardPage = () => {
             onMarkNotificationsRead={markNotificationsRead}
           />
 
-          <section className="rounded-[28px] bg-white/88 px-6 py-4 shadow-shell backdrop-blur-xl">
+          <section className="motion-card reveal-up rounded-[28px] bg-white/88 px-6 py-4 shadow-shell backdrop-blur-xl">
             <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
               <div className="flex-1">
                 <div className="mb-2 flex items-center gap-2 text-sm text-drive-subtext">
@@ -585,7 +585,7 @@ export const DashboardPage = () => {
 
                 <div className="grid grid-cols-3 gap-3 xl:min-w-[420px]">
                   {metrics.map((metric) => (
-                    <div key={metric.label} className="rounded-[20px] bg-[#fcf8fb] px-4 py-3 shadow-[0_8px_20px_rgba(74,21,75,0.06)]">
+                    <div key={metric.label} className="motion-card rounded-[20px] bg-[#fcf8fb] px-4 py-3 shadow-[0_8px_20px_rgba(74,21,75,0.06)]">
                       <p className="text-xs uppercase tracking-[0.18em] text-drive-subtext">{metric.label}</p>
                       <p className="mt-2 text-[2.3rem] font-medium leading-none tracking-tight text-drive-text">{String(metric.value).padStart(2, "0")}</p>
                       <p className="mt-1 text-xs text-drive-subtext">{metric.helper}</p>
@@ -596,7 +596,7 @@ export const DashboardPage = () => {
             </div>
           </section>
 
-          <section className="rounded-[28px] bg-white/88 px-6 py-4 shadow-shell backdrop-blur-xl">
+          <section className="motion-card reveal-up rounded-[28px] bg-white/88 px-6 py-4 shadow-shell backdrop-blur-xl" style={{ animationDelay: "90ms" }}>
             <div className="mb-4 flex flex-wrap items-center gap-3">
               <Select value={typeFilter} onChange={setTypeFilter} options={filterOptions.type} className="min-w-[160px]" buttonClassName="h-11 min-w-[160px] rounded-full border border-[#e7d9e1] px-5 py-3 text-[15px] shadow-[0_1px_2px_rgba(60,64,67,0.06)]" menuClassName="min-w-[220px]" />
               <Select value={ownerFilter} onChange={setOwnerFilter} options={filterOptions.owner} className="min-w-[190px]" buttonClassName="h-11 min-w-[190px] rounded-full border border-[#e7d9e1] px-5 py-3 text-[15px] shadow-[0_1px_2px_rgba(60,64,67,0.06)]" menuClassName="min-w-[240px]" />
