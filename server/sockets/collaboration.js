@@ -41,17 +41,9 @@ const getPresencePayload = async (documentId) => {
     const user = users.find((candidate) => candidate._id.toString() === entry.userId);
     return {
       socketId: entry.socketId,
-      user: user || null,
-      cursor: entry.cursor || null
+      user: user || null
     };
   });
-};
-
-const updateParticipantCursor = (documentId, socketId, cursor) => {
-  const roomState = documentPresence.get(documentId) || [];
-  const participant = roomState.find((entry) => entry.socketId === socketId);
-  if (participant) participant.cursor = cursor || null;
-  documentPresence.set(documentId, roomState);
 };
 
 export const registerCollaborationHandlers = (io) => {
@@ -95,7 +87,7 @@ export const registerCollaborationHandlers = (io) => {
 
       const yState = getYDocument(documentId);
       const roomState = documentPresence.get(documentId) || [];
-      roomState.push({ socketId: socket.id, userId: socket.user._id.toString(), cursor: null });
+      roomState.push({ socketId: socket.id, userId: socket.user._id.toString() });
       documentPresence.set(documentId, roomState);
 
       const content = unsavedDocumentState.get(documentId) ?? file.content;
@@ -112,25 +104,7 @@ export const registerCollaborationHandlers = (io) => {
       io.to(documentId).emit("presence-update", await getPresencePayload(documentId));
     });
 
-    socket.on("cursor-move", async ({ documentId, cursor }) => {
-      const permission = socketPermissions.get(socket.id);
-      if (!permission || permission.documentId !== documentId) return;
-
-      updateParticipantCursor(documentId, socket.id, cursor);
-      io.to(documentId).emit("presence-update", await getPresencePayload(documentId));
-    });
-
-    socket.on("send-changes", async ({ documentId, content, cursor }) => {
-      const permission = socketPermissions.get(socket.id);
-      if (!permission || permission.documentId !== documentId || !["owner", "editor"].includes(permission.role)) return;
-
-      unsavedDocumentState.set(documentId, content);
-      updateParticipantCursor(documentId, socket.id, cursor);
-      socket.to(documentId).emit("receive-changes", { content, senderId: socket.user._id.toString(), cursor: cursor || null });
-      io.to(documentId).emit("presence-update", await getPresencePayload(documentId));
-    });
-
-    socket.on("yjs-update", async ({ documentId, update, cursor }) => {
+    socket.on("yjs-update", async ({ documentId, update }) => {
       const permission = socketPermissions.get(socket.id);
       if (!permission || permission.documentId !== documentId || !["owner", "editor"].includes(permission.role)) return;
 
@@ -141,9 +115,7 @@ export const registerCollaborationHandlers = (io) => {
         yState.initialized = true;
         yState.seedingSocketId = null;
         yState.updatedAt = Date.now();
-        updateParticipantCursor(documentId, socket.id, cursor);
         socket.to(documentId).emit("yjs-update", { update: binaryUpdate, senderSocketId: socket.id });
-        io.to(documentId).emit("presence-update", await getPresencePayload(documentId));
       } catch (error) {
         socket.emit("editor-error", { message: "Could not sync document changes." });
       }

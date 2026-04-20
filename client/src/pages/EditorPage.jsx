@@ -40,7 +40,6 @@ import { Select } from "../components/ui/Select";
 import { ShareModal } from "../components/modals/ShareModal";
 import { DocsMenuBar } from "../components/editor/DocsMenuBar";
 import { CommentPanel } from "../components/editor/CommentPanel";
-import { CursorOverlay } from "../components/editor/CursorOverlay";
 import { SlashMenu } from "../components/editor/SlashMenu";
 import { FontSize } from "../components/editor/extensions/FontSize";
 import { useToast } from "../context/ToastContext";
@@ -190,14 +189,10 @@ export const EditorPage = () => {
   const collaborationProvider = useMemo(() => ({ awareness }), [awareness]);
   const socketRef = useRef(null);
   const roleRef = useRef("viewer");
-  const localSocketIdRef = useRef(null);
-  const sendChangesTimeoutRef = useRef(null);
   const seededYDocRef = useRef(false);
-  const pageRef = useRef(null);
   const [file, setFile] = useState(null);
   const [presence, setPresence] = useState([]);
   const [comments, setComments] = useState([]);
-  const [cursorOverlays, setCursorOverlays] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [role, setRole] = useState("viewer");
@@ -249,13 +244,6 @@ export const EditorPage = () => {
       const { from, to } = current.state.selection;
       const text = current.state.doc.textBetween(from, to, " ").trim();
       setSelectedText(text);
-      awareness.setLocalStateField("user", {
-        name: user?.name || user?.username || "Collaborator",
-        color: user?.avatarColor || "#9d174d"
-      });
-      awareness.setLocalStateField("cursor", { from, to, anchor: from, head: to });
-      socketRef.current?.emit("cursor-move", { documentId: id, cursor: { from, to } });
-
       const paragraphText = current.state.selection.$from.parent.textContent || "";
       if (paragraphText.startsWith("/")) {
         setSlashState({ open: true, query: paragraphText.slice(1) });
@@ -312,17 +300,11 @@ export const EditorPage = () => {
     const socket = io(import.meta.env.VITE_SOCKET_URL || "http://localhost:5000", { auth: { token: authToken } });
     socketRef.current = socket;
 
-    const getCursor = () => {
-      const { from, to } = editor.state.selection;
-      return { from, to, anchor: from, head: to };
-    };
-
     const handleLocalYjsUpdate = (update, origin) => {
       if (origin === "socket" || !["owner", "editor"].includes(roleRef.current)) return;
       socket.emit("yjs-update", {
         documentId: id,
-        update: Array.from(update),
-        cursor: getCursor()
+        update: Array.from(update)
       });
     };
 
@@ -338,13 +320,12 @@ export const EditorPage = () => {
 
     yDoc.on("update", handleLocalYjsUpdate);
     awareness.on("update", handleLocalAwarenessUpdate);
-    awareness.setLocalStateField("user", {
+    editor.commands.updateUser({
       name: user?.name || user?.username || "Collaborator",
       color: user?.avatarColor || "#9d174d"
     });
 
     socket.on("connect", () => {
-      localSocketIdRef.current = socket.id;
       socket.emit("join-document", { documentId: id });
     });
 
@@ -359,8 +340,6 @@ export const EditorPage = () => {
       if (!initialized && canSeed && !seededYDocRef.current) {
         seededYDocRef.current = true;
         editor.commands.setContent(content || "<p></p>", true);
-      } else if (!initialized && !canSeed && editor.isEmpty) {
-        editor.commands.setContent(content || "<p></p>", false);
       }
       setIsEditorEmpty(editor.isEmpty);
     });
@@ -392,7 +371,6 @@ export const EditorPage = () => {
 
     return () => {
       clearInterval(intervalId);
-      clearTimeout(sendChangesTimeoutRef.current);
       if (["owner", "editor"].includes(roleRef.current)) {
         socket.emit("save-document", { documentId: id, content: editor.getHTML() });
       }
@@ -403,33 +381,6 @@ export const EditorPage = () => {
       socketRef.current = null;
     };
   }, [id, editor, authToken, toast, user?._id, user?.name, user?.username, user?.avatarColor, yDoc, awareness]);
-
-  useEffect(() => {
-    if (!editor || !pageRef.current) return;
-
-    const nextCursors = (presence || [])
-      .filter((entry) => entry.socketId !== localSocketIdRef.current)
-      .filter((entry) => entry.cursor?.from && entry.user)
-      .map((entry) => {
-        try {
-          const position = Math.min(entry.cursor.from, editor.state.doc.content.size);
-          const coords = editor.view.coordsAtPos(position);
-          const pageRect = pageRef.current.getBoundingClientRect();
-          return {
-            key: entry.socketId,
-            left: coords.left - pageRect.left,
-            top: coords.top - pageRect.top,
-            label: entry.user.name || entry.user.username,
-            color: entry.user.avatarColor || "#9d174d"
-          };
-        } catch {
-          return null;
-        }
-      })
-      .filter(Boolean);
-
-    setCursorOverlays(nextCursors);
-  }, [presence, editor, file?.updatedAt, zoom]);
 
   const saveNow = async () => {
     if (!editor || !["owner", "editor"].includes(role)) return;
@@ -517,7 +468,7 @@ export const EditorPage = () => {
   const handleRestoreVersion = async (versionId) => {
     try {
       const { data } = await filesApi.restoreVersion(id, versionId);
-      editor?.commands.setContent(data.content || "<p></p>", false);
+      editor?.commands.setContent(data.content || "<p></p>", true);
       setLastSavedAt(data.updatedAt);
       setShowVersions(false);
       toast.success("Version restored.");
@@ -622,8 +573,7 @@ export const EditorPage = () => {
                 </div>
                 <div className="px-6 py-2 text-xs text-[#6f6471]">Type <span className="font-medium text-[#202124]">/</span> for quick insert commands. Rich comments are available in the side panel for commenters and editors.</div>
               </div>
-              <div ref={pageRef} className="docs-page relative mx-auto min-h-[78vh] rounded-b-[4px] bg-white px-[72px] py-[64px]" style={{ zoom: `${zoom}%` }}>
-                <CursorOverlay cursors={cursorOverlays} />
+              <div className="docs-page relative mx-auto min-h-[78vh] rounded-b-[4px] bg-white px-[72px] py-[64px]" style={{ zoom: `${zoom}%` }}>
                 {slashState.open ? <SlashMenu open={slashState.open} query={slashState.query} onSelect={runSlashCommand} /> : null}
                 {isEditorEmpty ? <div className="docs-placeholder">Start typing your document...</div> : null}
                 <div className="collab-editor" onClick={() => (canEdit || canComment) && editor.commands.focus()}>
