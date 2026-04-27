@@ -2,8 +2,8 @@ import { createServer } from "node:http";
 import { createReadStream, existsSync, statSync } from "node:fs";
 import { extname, join, normalize, resolve } from "node:path";
 
-const primaryPort = Number(process.env.PORT || 4173);
 const fallbackPort = 4173;
+const configuredPort = Number(process.env.PORT || fallbackPort);
 const distDir = resolve("client", "dist");
 const indexFile = join(distDir, "index.html");
 
@@ -65,8 +65,4 @@ function listen(port) {
     });
 }
 
-listen(primaryPort);
-
-if (primaryPort !== fallbackPort) {
-  listen(fallbackPort);
-}
+listen(configuredPort);
